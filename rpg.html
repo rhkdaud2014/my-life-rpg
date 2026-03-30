@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life RPG v3.0 - Master Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="container" class="game-container rank-f">
+    <button class="reset-btn" onclick="resetGame()">데이터 초기화</button>
+
+    <div class="profile-box">
+        <div id="profile-view">
+            <h2 id="p-name">👤 플레이어</h2>
+            <p id="p-bio" class="bio-text">나만의 인생 게임을 시작해보세요!</p>
+            <button onclick="toggleProfileEdit()" class="small-btn">프로필 수정</button>
+        </div>
+        
+        <div id="profile-edit" style="display:none;">
+            <input type="text" id="edit-name" placeholder="닉네임">
+            <input type="text" id="edit-bio" placeholder="한줄 다짐">
+            <div class="edit-actions">
+                <button onclick="saveProfile()" class="save-btn">저장</button>
+                <button onclick="toggleProfileEdit()" class="cancel-btn">취소</button>
+            </div>
+        </div>
+
+        <div id="p-rank" class="rank-display">RANK: F (입문자)</div>
+        <div class="status-bar">
+            <div id="exp-bar" class="exp-fill"></div>
+        </div>
+        <div class="stats-text">
+            LV <span id="lv">1</span> | 💰 <span id="gold">0</span>G
+        </div>
+    </div>
+
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="setTab('일간', event)">일간</button>
+        <button class="tab-btn" onclick="setTab('주간', event)">주간</button>
+        <button class="tab-btn" onclick="setTab('연간', event)">연간</button>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="q-input" placeholder="새로운 도전 입력...">
+        <select id="q-diff">
+            <option value="쉬움">쉬움</option>
+            <option value="보통">보통</option>
+            <option value="어려움">어려움</option>
+        </select>
+        <button onclick="addQuest()" class="add-btn">+</button>
+    </div>
+    <div id="q-list" class="list-container"></div>
+
+    <div class="shop-section">
+        <h3 class="section-title">🛒 포인트 상점</h3>
+        <div class="input-group">
+            <input type="text" id="s-input" placeholder="나에게 줄 보상">
+            <input type="number" id="s-price" placeholder="G" style="flex:0.4;">
+            <button onclick="addShopItem()" class="shop-add-btn">등록</button>
+        </div>
+        <div id="s-list" class="list-container"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
