@@ -7,15 +7,6 @@ body {
     background-color: var(--bg);
     color: var(--text);
     font-family: 'Segoe UI', Tahoma, sans-serif;
-    display: flex;:root {
-    --bg: #0d1117; --card: #161b22; --accent: #58a6ff;
-    --gold: #f9d423; --red: #f85149; --green: #3fb950; --text: #c9d1d9;
-}
-
-body {
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: 'Segoe UI', Tahoma, sans-serif;
     display: flex;
     justify-content: center;
     padding: 20px;
@@ -67,57 +58,3 @@ input, select { background: #0d1117; border: 1px solid #30363d; color: white; pa
 .buy-btn:disabled { background: #333; cursor: not-allowed; }
 
 .reset-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: var(--red); font-size: 11px; cursor: pointer; opacity: 0.4; }
-    justify-content: center;
-    padding: 20px;
-    margin: 0;
-}
-
-.game-container {
-    width: 100%;
-    max-width: 450px;
-    padding: 25px;
-    border-radius: 20px;
-    background: var(--card);
-    position: relative;
-    transition: 0.5s;
-    border: 2px solid #30363d;
-}
-
-/* 등급별 시각 효과 */
-.rank-f { border-color: #8b949e; box-shadow: 0 0 10px rgba(139, 148, 158, 0.1); }
-.rank-d { border-color: var(--green); box-shadow: 0 0 20px rgba(63, 185, 80, 0.2); }
-.rank-b { border-color: var(--accent); animation: glow-blue 2s infinite; }
-.rank-s { border-color: var(--gold); animation: glow-gold 1.5s infinite; }
-
-@keyframes glow-blue { 0%, 100% { box-shadow: 0 0 10px var(--accent); } 50% { box-shadow: 0 0 25px var(--accent); } }
-@keyframes glow-gold { 0%, 100% { box-shadow: 0 0 15px var(--gold); transform: scale(1); } 50% { box-shadow: 0 0 40px var(--gold); transform: scale(1.01); } }
-
-/* 프로필 & 스탯 */
-.profile-box { text-align: center; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 15px; margin-bottom: 20px; }
-.bio-text { font-size: 13px; color: #8b949e; margin-bottom: 10px; }
-.rank-display { font-weight: bold; color: var(--gold); margin-bottom: 10px; }
-.status-bar { background: #30363d; height: 12px; border-radius: 6px; overflow: hidden; margin: 10px 0; }
-.exp-fill { background: linear-gradient(90deg, var(--accent), var(--green)); height: 100%; width: 0%; transition: 0.4s; }
-.stats-text { font-weight: bold; font-size: 15px; }
-
-/* 공통 UI */
-.input-group { display: flex; gap: 8px; margin-bottom: 10px; }
-input, select { background: #0d1117; border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px; flex: 1; }
-button { cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: 0.2s; }
-button:hover { filter: brightness(1.2); }
-
-.tab-menu { display: flex; gap: 5px; margin-bottom: 15px; }
-.tab-btn { flex: 1; padding: 10px; background: #21262d; color: white; font-size: 12px; }
-.tab-btn.active { background: var(--accent); }
-
-.list-container { margin-bottom: 20px; }
-.item-row { background: #21262d; padding: 12px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-
-/* 상점 전용 */
-.shop-section { border-top: 1px solid #30363d; padding-top: 20px; }
-.section-title { font-size: 18px; color: var(--gold); margin-bottom: 15px; }
-.buy-btn { background: var(--green); color: white; padding: 5px 12px; }
-.buy-btn:disabled { background: #333; color: #777; cursor: not-allowed; }
-.del-btn { background: none; color: var(--red); font-size: 18px; margin-left: 10px; }
-
-.reset-btn { position: absolute; top: 10px; right: 10px; background: none; color: var(--red); font-size: 11px; opacity: 0.4; }
