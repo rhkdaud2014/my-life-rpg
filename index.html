@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; manifest-src 'self'">
     <title>Life RPG v0.5 - App</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0d1117">
@@ -11,51 +10,52 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <div id="container" class="game-container rank-f">
-    <button id="reset-btn" class="reset-btn" type="button">데이터 초기화</button>
+    <button class="reset-btn" onclick="resetGame()">데이터 초기화</button>
 
     <div class="profile-box">
         <div id="profile-view">
-            <h2 id="p-name">Lv. 플레이어</h2>
-            <p id="p-bio" class="bio-text">인생 RPG 시작 중</p>
-            <button id="profile-edit-toggle" class="small-btn" type="button" style="background:#30363d; color:#8b949e; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:10px;">프로필 수정</button>
+            <h2 id="p-name">👤 플레이어</h2>
+            <p id="p-bio" class="bio-text">갓생 모드 가동 중!</p>
+            <button onclick="toggleProfileEdit()" class="small-btn" style="background:#30363d; color:#8b949e; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:10px;">프로필 수정</button>
         </div>
         <div id="profile-edit" style="display:none;">
-            <input type="text" id="edit-name" placeholder="닉네임" maxlength="24" style="width:80%; margin-bottom:5px;"><br>
-            <input type="text" id="edit-bio" placeholder="상태 메시지" maxlength="80" style="width:80%; margin-bottom:5px;"><br>
-            <button id="profile-save-btn" type="button" style="background:var(--green); color:white; border:none; padding:5px 15px; border-radius:4px; cursor:pointer;">저장</button>
+            <input type="text" id="edit-name" placeholder="닉네임" style="width:80%; margin-bottom:5px;"><br>
+            <input type="text" id="edit-bio" placeholder="한줄 다짐" style="width:80%; margin-bottom:5px;"><br>
+            <button onclick="saveProfile()" style="background:var(--green); color:white; border:none; padding:5px 15px; border-radius:4px; cursor:pointer;">저장</button>
         </div>
         <div id="p-rank" class="rank-display" style="margin-top:10px; font-weight:bold; color:var(--gold);">RANK: F</div>
         <div class="status-bar"><div id="exp-bar" class="exp-fill"></div></div>
-        <div class="stats-text">LV <span id="lv">1</span> | 골드 <span id="gold">0</span>G</div>
+        <div class="stats-text">LV <span id="lv">1</span> | 💰 <span id="gold">0</span>G</div>
     </div>
 
     <div class="tab-menu">
-        <button class="tab-btn active" type="button" data-tab="daily">일간</button>
-        <button class="tab-btn" type="button" data-tab="weekly">주간</button>
-        <button class="tab-btn" type="button" data-tab="monthly">월간</button>
+        <button class="tab-btn active" onclick="setTab('일간', event)">일간</button>
+        <button class="tab-btn" onclick="setTab('주간', event)">주간</button>
+        <button class="tab-btn" onclick="setTab('연간', event)">연간</button>
     </div>
 
     <div class="input-group">
-        <input type="text" id="q-input" placeholder="새로운 퀘스트 입력..." maxlength="80">
+        <input type="text" id="q-input" placeholder="새로운 도전 입력...">
         <select id="q-diff" style="flex:0.4;">
-            <option value="easy">쉬움</option>
-            <option value="normal">보통</option>
-            <option value="hard">어려움</option>
+            <option value="쉬움">쉬움</option>
+            <option value="보통">보통</option>
+            <option value="어려움">어려움</option>
         </select>
-        <button id="add-quest-btn" type="button" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:6px; cursor:pointer; font-weight:bold;">+</button>
+        <button onclick="addQuest()" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:6px; cursor:pointer; font-weight:bold;">+</button>
     </div>
     <div id="q-list" class="list-container"></div>
 
     <div class="shop-section">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0; color:var(--gold);">보상 상점</h3>
-            <button id="suggest-reward-btn" type="button" style="background:#30363d; color:var(--gold); border:1px solid var(--gold); padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">랜덤 추천</button>
+            <h3 style="margin:0; color:var(--gold);">🛒 보상 상점</h3>
+            <button onclick="suggestReward()" style="background:#30363d; color:var(--gold); border:1px solid var(--gold); padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">🎲 랜덤 추천</button>
         </div>
         <div class="input-group">
-            <input type="text" id="s-input" placeholder="보상 이름" maxlength="80">
-            <input type="number" id="s-price" placeholder="G" style="flex:0.4;" min="1" max="999999">
-            <button id="add-shop-btn" type="button" style="background:var(--gold); color:black; border:none; padding:0 10px; border-radius:6px; cursor:pointer; font-weight:bold;">등록</button>
+            <input type="text" id="s-input" placeholder="보상 이름">
+            <input type="number" id="s-price" placeholder="G" style="flex:0.4;">
+            <button onclick="addShopItem()" style="background:var(--gold); color:black; border:none; padding:0 10px; border-radius:6px; cursor:pointer; font-weight:bold;">등록</button>
         </div>
         <div id="s-list" class="list-container"></div>
     </div>
