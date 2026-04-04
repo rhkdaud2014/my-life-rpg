@@ -1,0 +1,15 @@
+{
+  "short_name": "인생RPG",
+  "name": "Life RPG: 인생 레벨업",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5405/5405166.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0d1117",
+  "background_color": "#0d1117"
+}
