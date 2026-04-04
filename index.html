@@ -2,8 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Life RPG v3.0 - Master Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Life RPG v0.5 - App</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1117">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -14,26 +17,17 @@
     <div class="profile-box">
         <div id="profile-view">
             <h2 id="p-name">👤 플레이어</h2>
-            <p id="p-bio" class="bio-text">나만의 인생 게임을 시작해보세요!</p>
-            <button onclick="toggleProfileEdit()" class="small-btn">프로필 수정</button>
+            <p id="p-bio" class="bio-text">갓생 모드 가동 중!</p>
+            <button onclick="toggleProfileEdit()" class="small-btn" style="background:#30363d; color:#8b949e; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:10px;">프로필 수정</button>
         </div>
-        
         <div id="profile-edit" style="display:none;">
-            <input type="text" id="edit-name" placeholder="닉네임">
-            <input type="text" id="edit-bio" placeholder="한줄 다짐">
-            <div class="edit-actions">
-                <button onclick="saveProfile()" class="save-btn">저장</button>
-                <button onclick="toggleProfileEdit()" class="cancel-btn">취소</button>
-            </div>
+            <input type="text" id="edit-name" placeholder="닉네임" style="width:80%; margin-bottom:5px;"><br>
+            <input type="text" id="edit-bio" placeholder="한줄 다짐" style="width:80%; margin-bottom:5px;"><br>
+            <button onclick="saveProfile()" style="background:var(--green); color:white; border:none; padding:5px 15px; border-radius:4px; cursor:pointer;">저장</button>
         </div>
-
-        <div id="p-rank" class="rank-display">RANK: F (입문자)</div>
-        <div class="status-bar">
-            <div id="exp-bar" class="exp-fill"></div>
-        </div>
-        <div class="stats-text">
-            LV <span id="lv">1</span> | 💰 <span id="gold">0</span>G
-        </div>
+        <div id="p-rank" class="rank-display" style="margin-top:10px; font-weight:bold; color:var(--gold);">RANK: F</div>
+        <div class="status-bar"><div id="exp-bar" class="exp-fill"></div></div>
+        <div class="stats-text">LV <span id="lv">1</span> | 💰 <span id="gold">0</span>G</div>
     </div>
 
     <div class="tab-menu">
@@ -44,21 +38,24 @@
 
     <div class="input-group">
         <input type="text" id="q-input" placeholder="새로운 도전 입력...">
-        <select id="q-diff">
+        <select id="q-diff" style="flex:0.4;">
             <option value="쉬움">쉬움</option>
             <option value="보통">보통</option>
             <option value="어려움">어려움</option>
         </select>
-        <button onclick="addQuest()" class="add-btn">+</button>
+        <button onclick="addQuest()" style="background:var(--accent); color:white; border:none; padding:0 15px; border-radius:6px; cursor:pointer; font-weight:bold;">+</button>
     </div>
     <div id="q-list" class="list-container"></div>
 
     <div class="shop-section">
-        <h3 class="section-title">🛒 포인트 상점</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h3 style="margin:0; color:var(--gold);">🛒 보상 상점</h3>
+            <button onclick="suggestReward()" style="background:#30363d; color:var(--gold); border:1px solid var(--gold); padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">🎲 랜덤 추천</button>
+        </div>
         <div class="input-group">
-            <input type="text" id="s-input" placeholder="나에게 줄 보상">
+            <input type="text" id="s-input" placeholder="보상 이름">
             <input type="number" id="s-price" placeholder="G" style="flex:0.4;">
-            <button onclick="addShopItem()" class="shop-add-btn">등록</button>
+            <button onclick="addShopItem()" style="background:var(--gold); color:black; border:none; padding:0 10px; border-radius:6px; cursor:pointer; font-weight:bold;">등록</button>
         </div>
         <div id="s-list" class="list-container"></div>
     </div>
