@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Life RPG v0.7.5 - Ranker Edition</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Life RPG v0.8</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
-
-    <div id="container" class="game-container rank-f">
-        
+    <div id="container" class="game-container">
         <div id="auth-section" class="auth-overlay">
             <div class="auth-box">
                 <h2>🔐 인생 RPG 로그인</h2>
@@ -31,7 +28,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <div>
                     <button class="logout-btn" onclick="logout()">로그아웃</button>
-                    <button onclick="showRanking()" style="background:var(--gold); color:black; border:none; padding:3px 8px; border-radius:4px; cursor:pointer; font-size:10px; font-weight:bold; margin-left:5px;">🏆 랭킹</button>
+                    <button onclick="showRanking()" class="rank-btn">🏆 랭킹</button>
                 </div>
                 <button class="reset-btn" onclick="resetGame()">초기화</button>
             </div>
@@ -48,9 +45,7 @@
                     <button onclick="saveProfile()" class="save-btn">저장</button>
                 </div>
                 <div id="p-rank" class="rank-display">RANK: F</div>
-                <div class="status-bar">
-                    <div id="exp-bar" class="exp-fill"></div>
-                </div>
+                <div class="status-bar"><div id="exp-bar" class="exp-fill"></div></div>
                 <div class="stats-text">LV <span id="lv">1</span> | 💰 <span id="gold">0</span>G</div>
             </div>
 
@@ -83,17 +78,20 @@
                 </div>
                 <div id="s-list" class="list-container"></div>
             </div>
-        </div>
 
-        <div id="ranking-modal" class="auth-overlay" style="display:none; flex-direction:column;">
-            <div class="auth-box" style="background:var(--card); padding:20px; border-radius:15px; border:1px solid var(--gold); max-height:80%; overflow-y:auto;">
-                <h2 style="color:var(--gold); margin-bottom:15px;">🏆 명예의 전당</h2>
-                <div id="ranking-list" style="text-align:left;">
-                    </div>
-                <button onclick="closeRanking()" style="margin-top:20px; background:#30363d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; width:100%;">닫기</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #30363d;">
+                <button onclick="deleteAccount()" style="background:none; border:none; color:var(--red); font-size:11px; cursor:pointer; text-decoration:underline;">계정 탈퇴</button>
             </div>
         </div>
 
-    </div> <script src="script.js"></script>
+        <div id="ranking-modal" class="auth-overlay" style="display:none; flex-direction:column;">
+            <div class="auth-box ranking-card">
+                <h2 style="color:var(--gold); margin-bottom:15px;">🏆 명예의 전당</h2>
+                <div id="ranking-list" style="text-align:left;"></div>
+                <button onclick="closeRanking()" class="close-btn">닫기</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
