@@ -1,4 +1,4 @@
-// 1. Firebase 설정 (본인의 값으로 교체 필수!)
+// 1. Firebase 설정
 const firebaseConfig = {
     apiKey: "AIzaSyCaZuvX6w6mNTllo8V9RZobN7yJkfWOvUE",
     authDomain: "my-life-rpg-35d7a.firebaseapp.com",
@@ -15,7 +15,7 @@ const db = firebase.firestore();
 let state = { name: "플레이어", bio: "인생 RPG 시작!", lv: 1, exp: 0, gold: 0, quests: [], shopItems: [], currentTab: '일간' };
 let currentUser = null;
 
-// 2. 로그인 감시 및 데이터 로드
+// 2. 로그인 상태 관리
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
@@ -40,7 +40,7 @@ async function handleAuth(type) {
 
 function logout() { auth.signOut(); }
 
-// 3. 서버 저장 및 불러오기
+// 3. 데이터 저장/로드
 async function saveData() {
     if (!currentUser) return;
     await db.collection("users").doc(currentUser.uid).set(state);
@@ -52,7 +52,7 @@ async function loadData() {
     updateUI();
 }
 
-// 4. 게임 핵심 로직
+// 4. 게임 엔진
 function updateUI() {
     document.getElementById('p-name').innerText = "👤 " + state.name;
     document.getElementById('p-bio').innerText = state.bio;
@@ -62,10 +62,9 @@ function updateUI() {
     renderQuests();
     renderShop();
     updateRankDisplay();
-    checkIfRanker(); // 1위 체크
+    checkIfRanker();
 }
 
-// 실시간 1위 체크 (황금 아우라)
 async function checkIfRanker() {
     const container = document.getElementById('container');
     try {
@@ -76,7 +75,7 @@ async function checkIfRanker() {
         } else {
             container.classList.remove('ranker-aura');
         }
-    } catch (e) { console.log("순위 확인 중..."); }
+    } catch (e) {}
 }
 
 function addQuest() {
@@ -95,46 +94,28 @@ function completeQuest(id, exp, gold) {
     saveData(); updateUI();
 }
 
-// 5. 🏆 랭킹 시스템
-async function showRanking() {
-    const modal = document.getElementById('ranking-modal');
-    const list = document.getElementById('ranking-list');
-    modal.style.display = 'flex';
-    list.innerHTML = "<p style='text-align:center;'>순위 집계 중...</p>";
+function deleteQuest(id) { if(confirm("삭제할까요?")) { state.quests = state.quests.filter(q => q.id !== id); saveData(); updateUI(); } }
 
-    try {
-        const snapshot = await db.collection("users").orderBy("lv", "desc").limit(10).get();
-        let html = "";
-        let rank = 1;
-
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            const isMe = currentUser && doc.id === currentUser.uid;
-            const medal = rank === 1 ? `<span class="rank-badge badge-1">TOP 1</span>` : 
-                          rank === 2 ? `<span class="rank-badge badge-2">TOP 2</span>` : 
-                          rank === 3 ? `<span class="rank-badge badge-3">TOP 3</span>` : 
-                          `<span style="margin-right:12px; font-size:11px; color:#8b949e;">${rank}위</span>`;
-            
-            html += `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #30363d; ${isMe ? 'background:rgba(88,166,255,0.1); border-radius:8px;' : ''}">
-                    <div style="display:flex; align-items:center;">
-                        ${medal}
-                        <span style="font-size:14px; ${isMe ? 'color:var(--accent); font-weight:bold;' : ''}">${data.name || '무명 용사'}</span>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="color:var(--gold); font-size:13px; font-weight:bold;">Lv.${data.lv}</div>
-                        <div style="color:#555; font-size:9px;">${rank === 1 ? '전설의 시작' : rank <= 3 ? '고급 모험가' : '평범한 시민'}</div>
-                    </div>
-                </div>`;
-            rank++;
-        });
-        list.innerHTML = html || "<p>랭커가 없습니다.</p>";
-    } catch (err) { list.innerHTML = "<p>에러 발생!</p>"; }
+// 5. 상점 시스템
+function addShopItem() {
+    const n = document.getElementById('s-input'), p = document.getElementById('s-price');
+    if (!n.value || !p.value) return;
+    state.shopItems.push({ id: Date.now(), name: n.value, price: parseInt(p.value) });
+    n.value = ""; p.value = ""; saveData(); updateUI();
 }
 
-function closeRanking() { document.getElementById('ranking-modal').style.display = 'none'; }
+function buyItem(id, price) {
+    if (state.gold < price) return;
+    state.gold -= price; alert("보상 획득!"); saveData(); updateUI();
+}
 
-// 6. 🎲 랜덤 보상 추천 (다양한 품목 버전)
+function deleteShopItem(id) {
+    if(confirm("이 보상을 삭제할까요?")) {
+        state.shopItems = state.shopItems.filter(i => i.id !== id);
+        saveData(); updateUI();
+    }
+}
+
 function suggestReward() {
     const rewardSuggestions = [
         // --- 📱 디지털 & 휴식 ---
@@ -165,39 +146,68 @@ function suggestReward() {
         { name: "🛀 뜨끈한 입욕제 반신욕", price: 600 },
         { name: "💆‍♂️ 나를 위한 전신 마사지", price: 4500 }
     ];
-    const r = rewardSuggestions[Math.floor(Math.random() * rewardSuggestions.length)];
-    document.getElementById('s-input').value = r.name;
-    document.getElementById('s-price').value = r.price;
+};
+
+
+// 6. 랭킹 & 탈퇴
+async function showRanking() {
+    const modal = document.getElementById('ranking-modal'), list = document.getElementById('ranking-list');
+    modal.style.display = 'flex';
+    list.innerHTML = "집계 중...";
+    try {
+        const snap = await db.collection("users").orderBy("lv", "desc").limit(10).get();
+        let html = ""; let rank = 1;
+        snap.forEach(doc => {
+            const d = doc.data(), isMe = currentUser && doc.id === currentUser.uid;
+            html += `<div class="item-row" style="${isMe?'border-color:var(--accent);':''}">
+                <span>${rank}. ${d.name || '무명'} (Lv.${d.lv})</span>
+                <span style="font-size:10px; color:#555;">${rank===1?'절대자':''}</span>
+            </div>`;
+            rank++;
+        });
+        list.innerHTML = html;
+    } catch (e) { list.innerHTML = "에러 발생"; }
 }
 
-// 렌더링 함수들
+function closeRanking() { document.getElementById('ranking-modal').style.display = 'none'; }
+
+async function deleteAccount() {
+    if (!currentUser || !confirm("영구 삭제하시겠습니까?") || prompt("'삭제'를 입력하세요") !== "삭제") return;
+    try {
+        await db.collection("users").doc(currentUser.uid).delete();
+        await currentUser.delete();
+        location.reload();
+    } catch (e) { alert("다시 로그인 후 시도해주세요."); auth.signOut(); }
+}
+
+// 기타 UI 보조
 function renderQuests() {
     const list = document.getElementById('q-list');
     const filtered = state.quests.filter(q => q.tab === state.currentTab);
     list.innerHTML = filtered.map(q => `
         <div class="item-row">
-            <div onclick="completeQuest(${q.id}, ${q.exp}, ${q.gold})">
+            <div onclick="completeQuest(${q.id}, ${q.exp}, ${q.gold})" style="cursor:pointer;">
                 [${q.diff}] ${q.text} <span style="color:var(--gold); font-size:11px;">+${q.gold}G</span>
             </div>
             <button onclick="deleteQuest(${q.id})" style="background:none; border:none; color:#555; cursor:pointer;">×</button>
-        </div>`).join('') || `<p style="text-align:center; font-size:12px; color:#555;">퀘스트가 없습니다.</p>`;
+        </div>`).join('') || `<p style="text-align:center; font-size:12px; color:#555;">퀘스트 없음</p>`;
 }
 
 function renderShop() {
     const list = document.getElementById('s-list');
-    list.innerHTML = state.shopItems.map(item => `
+    list.innerHTML = state.shopItems.map(i => `
         <div class="item-row">
-            <span>${item.name} (${item.price}G)</span>
-            <button onclick="buyItem(${item.id}, ${item.price})" class="buy-btn" ${state.gold < item.price ? 'disabled' : ''} style="background:var(--gold); border:none; border-radius:4px; padding:3px 8px; cursor:pointer;">구매</button>
+            <span>${i.name} (${i.price}G)</span>
+            <div>
+                <button onclick="buyItem(${i.id}, ${i.price})" style="background:var(--gold); border:none; border-radius:4px; padding:3px 8px; cursor:pointer;" ${state.gold < i.price ? 'disabled' : ''}>구매</button>
+                <button onclick="deleteShopItem(${i.id})" style="background:none; border:none; color:#555; cursor:pointer; margin-left:5px;">×</button>
+            </div>
         </div>`).join('');
 }
 
 function updateRankDisplay() {
     const r = document.getElementById('p-rank');
-    if (state.lv < 10) r.innerText = "RANK: F";
-    else if (state.lv < 30) r.innerText = "RANK: D";
-    else if (state.lv < 60) r.innerText = "RANK: B";
-    else r.innerText = "RANK: S";
+    r.innerText = state.lv < 10 ? "RANK: F" : state.lv < 30 ? "RANK: D" : state.lv < 60 ? "RANK: B" : "RANK: S";
 }
 
 function setTab(tab, e) {
@@ -213,17 +223,10 @@ function toggleProfileEdit() {
     e.style.display = e.style.display==='none'?'block':'none';
 }
 
-function addShopItem() {
-    const n = document.getElementById('s-input'), p = document.getElementById('s-price');
-    if (!n.value || !p.value) return;
-    state.shopItems.push({ id: Date.now(), name: n.value, price: parseInt(p.value) });
-    n.value = ""; p.value = ""; saveData(); updateUI();
+function saveProfile() {
+    state.name = document.getElementById('edit-name').value || state.name;
+    state.bio = document.getElementById('edit-bio').value || state.bio;
+    saveData(); updateUI(); toggleProfileEdit();
 }
 
-function buyItem(id, price) {
-    if (state.gold < price) return;
-    state.gold -= price; alert("보상 획득!"); saveData(); updateUI();
-}
-
-function deleteQuest(id) { if(confirm("삭제?")) { state.quests=state.quests.filter(q=>q.id!==id); saveData(); updateUI(); } }
-function resetGame() { if(confirm("초기화?")) { state={...state, lv:1, exp:0, gold:0, quests:[], shopItems:[]}; saveData(); updateUI(); } }
+function resetGame() { if(confirm("데이터 초기화?")) { state={...state, lv:1, exp:0, gold:0, quests:[], shopItems:[]}; saveData(); updateUI(); } }
