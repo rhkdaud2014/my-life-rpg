@@ -30,3 +30,25 @@ input, select { background: var(--card); border: 1px solid #30363d; color: white
 .rank-btn { background: var(--gold); color: black; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; margin-left: 5px; }
 .logout-btn, .reset-btn { background: none; border: 1px solid #30363d; color: #8b949e; font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 .close-btn { margin-top: 20px; background: #30363d; color: white; border: none; padding: 10px; border-radius: 6px; width: 100%; cursor: pointer; }
+
+/* --- style.css 맨 아래에 추가하거나 기존 select 부분을 수정하세요 --- */
+
+/* 난이도 선택창 화살표 제거 및 고정 스타일 */
+select#q-diff {
+    -webkit-appearance: none;  /* 크롬, 사파리 화살표 제거 */
+    -moz-appearance: none;     /* 파이어폭스 화살표 제거 */
+    appearance: none;          /* 표준 화살표 제거 */
+    background-image: none !important;
+    cursor: default;           /* 마우스 커서를 기본으로 */
+    text-align: center;
+    border-color: #30363d;
+    color: var(--accent);      /* 고정된 느낌을 주기 위해 색상 변경 가능 */
+    font-weight: bold;
+    opacity: 1;                /* disabled 시 흐려지는 현상 방지 */
+}
+
+/* 크롬 등에서 disabled 배경색 고정 */
+select#q-diff:disabled {
+    background-color: var(--card);
+    color: var(--accent);
+}
