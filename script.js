@@ -1,4 +1,5 @@
-// 1. Firebase 설정
+// --- script.js 전체 교체 권장 ---
+
 const firebaseConfig = {
     apiKey: "AIzaSyCaZuvX6w6mNTllo8V9RZobN7yJkfWOvUE",
     authDomain: "my-life-rpg-35d7a.firebaseapp.com",
@@ -15,7 +16,6 @@ const db = firebase.firestore();
 let state = { name: "플레이어", bio: "인생 RPG 시작!", lv: 1, exp: 0, gold: 0, quests: [], shopItems: [], currentTab: '일간' };
 let currentUser = null;
 
-// 2. 로그인 상태 관리
 auth.onAuthStateChanged(user => {
     if (user) {
         currentUser = user;
@@ -40,7 +40,6 @@ async function handleAuth(type) {
 
 function logout() { auth.signOut(); }
 
-// 3. 데이터 저장/로드
 async function saveData() {
     if (!currentUser) return;
     await db.collection("users").doc(currentUser.uid).set(state);
@@ -52,13 +51,19 @@ async function loadData() {
     updateUI();
 }
 
-// 4. 게임 엔진
 function updateUI() {
     document.getElementById('p-name').innerText = "👤 " + state.name;
     document.getElementById('p-bio').innerText = state.bio;
     document.getElementById('lv').innerText = state.lv;
     document.getElementById('gold').innerText = state.gold;
     document.getElementById('exp-bar').style.width = state.exp + '%';
+
+    // [v0.9.1] 탭에 따른 난이도 선택창 자동 변경 및 화살표 제거용 클래스
+    const diffSelect = document.getElementById('q-diff');
+    if (state.currentTab === '일간') diffSelect.value = '쉬움';
+    else if (state.currentTab === '주간') diffSelect.value = '보통';
+    else if (state.currentTab === '연간') diffSelect.value = '어려움';
+
     renderQuests();
     renderShop();
     updateRankDisplay();
@@ -81,8 +86,19 @@ async function checkIfRanker() {
 function addQuest() {
     const input = document.getElementById('q-input');
     if (!input.value.trim()) return;
-    const diff = document.getElementById('q-diff').value;
-    let r = { exp: diff==='어려움'?100:diff==='보통'?30:10, gold: diff==='어려움'?200:diff==='보통'?60:20 };
+
+    // [v0.9.1] 탭에 따른 보상 및 난이도 고정 분배
+    let diff = '쉬움';
+    let r = { exp: 10, gold: 50 };
+
+    if (state.currentTab === '주간') {
+        diff = '보통';
+        r = { exp: 50, gold: 350 };
+    } else if (state.currentTab === '연간') {
+        diff = '어려움';
+        r = { exp: 200, gold: 2000 };
+    }
+
     state.quests.push({ id: Date.now(), text: input.value, diff, tab: state.currentTab, ...r });
     input.value = ""; saveData(); updateUI();
 }
@@ -96,7 +112,6 @@ function completeQuest(id, exp, gold) {
 
 function deleteQuest(id) { if(confirm("삭제할까요?")) { state.quests = state.quests.filter(q => q.id !== id); saveData(); updateUI(); } }
 
-// 5. 상점 시스템
 function addShopItem() {
     const n = document.getElementById('s-input'), p = document.getElementById('s-price');
     if (!n.value || !p.value) return;
@@ -116,40 +131,34 @@ function deleteShopItem(id) {
     }
 }
 
+// [v0.9.1] 추천 보상 버그 수정 및 적정 골드 분배
 function suggestReward() {
     const rewardSuggestions = [
-        // --- 📱 디지털 & 휴식 ---
-        { name: "📱 쇼츠/릴스/틱톡 30분 시청", price: 200 },
-        { name: "🎮 빡겜 모드 (롤/발로란트 2판)", price: 400 },
-        { name: "💤 마법의 낮잠 1시간 (알람 끄기)", price: 500 },
-        { name: "📺 넷플릭스/유튜브 영상 1편 시청", price: 300 },
-        { name: "🛌 아무것도 안 하기 (멍때리기 30분)", price: 100 },
-        { name: "📖 웹툰 유료분 5화 소장", price: 400 },
-
-        // --- 🍔 먹거리 & 간식 ---
-        { name: "🍕 [치팅데이] 오늘 저녁 배달 음식!", price: 1500 },
-        { name: "🍗 고생한 나에게 주는 치킨 선물", price: 2000 },
-        { name: "☕ 시원한 아이스 아메리카노 한 잔", price: 150 },
-        { name: "🍦 베스킨라빈스 파인트 컵", price: 800 },
-        { name: "🍫 편의점 최애 과자 쇼핑", price: 250 },
-        { name: "🧋 타피오카 추가한 버블티", price: 450 },
-
-        // --- 🛍️ 쇼핑 & 나를 위한 선물 ---
-        { name: "🎁 장바구니에 담아둔 물건 결제", price: 5000 },
-        { name: "👕 갖고 싶던 새 옷 한 벌 사기", price: 3500 },
-        { name: "👟 운동화/패션 아이템 쇼핑", price: 7000 },
-        { name: "🖱️ 게이밍 기어/IT 기기 구매", price: 8000 },
-
-        // --- ✨ 특별한 보상 ---
-        { name: "🎞️ 영화관에서 최신 영화 관람", price: 1800 },
+        { name: "📱 쇼츠/릴스 30분 시청", price: 100 },
+        { name: "🎮 게임 2판 (빡겜 가능)", price: 300 },
+        { name: "💤 마법의 낮잠 1시간", price: 400 },
+        { name: "📺 넷플릭스 영화 1편", price: 500 },
+        { name: "🛌 아무것도 안 하기 (멍때리기 30분)", price: 60 },
+        { name: "🍗 오늘 저녁은 배달 음식!", price: 2000 },
+        { name: "☕ 시원한 아메리카노", price: 70 },
+        { name: "🍦 시원한 아이스크림", price: 100 },
+        { name: "🎁 장바구니 물건 결제", price: 5000 },
+        { name: "👕 새 옷 한 벌 사기", price: 3000 },
+        { name: "👟 운동화/패션 아이템 쇼핑", price: 6000 },
+        { name: "🖱️ 게이밍 기어/IT 기기 구매", price: 7000 },
+        { name: "🎞️ 영화관에서 영화 관람", price: 1000 },
+        { name: "🛀 입욕제 반신욕 힐링", price: 500 },
         { name: "🎤 코인 노래방 1시간 열창", price: 400 },
-        { name: "🛀 뜨끈한 입욕제 반신욕", price: 600 },
-        { name: "💆‍♂️ 나를 위한 전신 마사지", price: 4500 }
+        { name: "💆‍♂️ 나를 위한 전신 마사지", price: 4000 }
+
     ];
-};
 
+    
+    const random = rewardSuggestions[Math.floor(Math.random() * rewardSuggestions.length)];
+    document.getElementById('s-input').value = random.name;
+    document.getElementById('s-price').value = random.price;
+}
 
-// 6. 랭킹 & 탈퇴
 async function showRanking() {
     const modal = document.getElementById('ranking-modal'), list = document.getElementById('ranking-list');
     modal.style.display = 'flex';
@@ -161,7 +170,6 @@ async function showRanking() {
             const d = doc.data(), isMe = currentUser && doc.id === currentUser.uid;
             html += `<div class="item-row" style="${isMe?'border-color:var(--accent);':''}">
                 <span>${rank}. ${d.name || '무명'} (Lv.${d.lv})</span>
-                <span style="font-size:10px; color:#555;">${rank===1?'절대자':''}</span>
             </div>`;
             rank++;
         });
@@ -180,7 +188,6 @@ async function deleteAccount() {
     } catch (e) { alert("다시 로그인 후 시도해주세요."); auth.signOut(); }
 }
 
-// 기타 UI 보조
 function renderQuests() {
     const list = document.getElementById('q-list');
     const filtered = state.quests.filter(q => q.tab === state.currentTab);
@@ -190,7 +197,7 @@ function renderQuests() {
                 [${q.diff}] ${q.text} <span style="color:var(--gold); font-size:11px;">+${q.gold}G</span>
             </div>
             <button onclick="deleteQuest(${q.id})" style="background:none; border:none; color:#555; cursor:pointer;">×</button>
-        </div>`).join('') || `<p style="text-align:center; font-size:12px; color:#555;">퀘스트 없음</p>`;
+        </div>`).join('') || `<p style="text-align:center; font-size:12px; color:#555;">${state.currentTab} 목표가 없습니다.</p>`;
 }
 
 function renderShop() {
@@ -214,7 +221,7 @@ function setTab(tab, e) {
     state.currentTab = tab;
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     e.target.classList.add('active');
-    renderQuests();
+    updateUI();
 }
 
 function toggleProfileEdit() {
