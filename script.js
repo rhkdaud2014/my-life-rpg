@@ -1,5 +1,3 @@
-// --- script.js 전체 교체 권장 ---
-
 const firebaseConfig = {
     apiKey: "AIzaSyCaZuvX6w6mNTllo8V9RZobN7yJkfWOvUE",
     authDomain: "my-life-rpg-35d7a.firebaseapp.com",
