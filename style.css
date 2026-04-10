@@ -1,54 +1,123 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
 :root {
-    --bg: #0d1117; --card: #161b22; --text: #c9d1d9;
-    --accent: #58a6ff; --green: #238636; --gold: #f1e05a; --red: #da3633;
+    /* 🌙 세련된 다크 모드 (완전 검은색이 아닌 부드러운 다크 그레이) */
+    --bg: #18181b;       /* 앱 배경 (진한 회색) */
+    --card: #27272a;     /* 카드 배경 (조금 더 밝은 회색) */
+    --text: #f4f4f5;     /* 밝은 텍스트 */
+    --accent: #3b82f6;   /* 블루 포인트 */
+    --green: #10b981; 
+    --gold: #fbbf24; 
+    --red: #ef4444;
+    --border: #3f3f46;   /* 은은한 테두리 색상 */
 }
-body { background: #000; color: var(--text); font-family: sans-serif; display: flex; justify-content: center; padding: 20px; margin: 0; }
-.game-container { width: 100%; max-width: 400px; background: var(--bg); padding: 20px; border-radius: 20px; border: 1px solid #30363d; min-height: 650px; position: relative; }
+
+/* 🌟 모든 요소의 크기 계산을 테두리 기준으로 변경 (짤림 방지 핵심) */
+* { box-sizing: border-box; }
+
+body { 
+    background: #09090b; /* PC 바탕화면은 더 어둡게 */
+    color: var(--text); 
+    font-family: 'Pretendard', sans-serif; 
+    display: flex; 
+    justify-content: center; 
+    margin: 0; 
+    height: 100vh; 
+    overflow: hidden; 
+    user-select: none; 
+    -webkit-tap-highlight-color: transparent; 
+}
+
+.game-container { 
+    width: 100%; 
+    max-width: 480px; 
+    background: var(--bg); 
+    height: 100vh; 
+    overflow-y: auto; 
+    position: relative; 
+    padding: 20px;
+}
+
+.game-container::-webkit-scrollbar { display: none; }
+
+/* 로그인 화면 */
+.auth-overlay { 
+    position: fixed; top:0; left:0; width:100%; height:100%; 
+    background: linear-gradient(135deg, rgba(24,24,27,0.95) 0%, rgba(39,39,42,0.95) 100%); 
+    display: flex; align-items: center; justify-content: center; z-index: 100; 
+}
+.auth-box { 
+    width: 85%; max-width: 340px;
+    background: rgba(39, 39, 42, 0.85); 
+    backdrop-filter: blur(15px); 
+    padding: 40px 25px; 
+    border-radius: 24px; 
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.auth-box h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 30px; letter-spacing: -0.5px; color: var(--text); }
+.auth-box input { margin-bottom: 12px; width: 100%; padding: 15px; font-size: 15px; }
+
+/* 공통 Input & Select */
+input, select { 
+    background: #18181b; border: 1px solid var(--border); color: var(--text); 
+    padding: 14px; border-radius: 12px; flex: 1; outline: none; transition: 0.2s;
+    font-family: 'Pretendard', sans-serif; font-size: 14px;
+    min-width: 0; /* 🌟 입력칸이 길어져도 화면 밖으로 안 나가게 방지 */
+}
+input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+
+select {
+    -webkit-appearance: none; -moz-appearance: none; appearance: none;
+    text-align: center; cursor: pointer;
+}
+
+button { font-family: 'Pretendard', sans-serif; font-weight: 600; cursor: pointer; transition: 0.1s; }
+button:active { transform: scale(0.96); } 
+
+.auth-btns { display: flex; gap: 10px; margin-top: 10px; }
+.login-btn, .save-btn, .signup-btn { 
+    padding: 14px; border-radius: 12px; flex: 1; font-size: 15px;
+}
+.login-btn, .save-btn { background: var(--accent); color: white; border: none; }
+.signup-btn { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+/* 🌟 상점 등록 & 퀘스트 추가 버튼 (짤림 완벽 방지) */
+.add-btn, .shop-add-btn { 
+    background: var(--accent); color: white; border: none; 
+    border-radius: 12px; 
+    flex: 0 0 65px; /* 버튼의 너비를 65px로 단단하게 고정 */
+    font-size: 14px;
+    white-space: nowrap; /* 글씨가 두 줄로 쪼개지는 것 방지 */
+}
+
+/* 프로필 영역 */
+.profile-box { background: var(--card); padding: 25px 20px; border-radius: 20px; text-align: center; margin-bottom: 25px; border: 1px solid var(--border); }
+#p-name { margin: 0 0 5px 0; font-size: 22px; font-weight: 700; color: var(--text); }
+.bio-text { margin: 0; color: #a1a1aa; font-size: 14px; margin-bottom: 15px; }
+.small-btn { background: transparent; border: 1px solid var(--border); color: #a1a1aa; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
+
+/* 경험치 바 */
+.status-bar { background: #18181b; height: 12px; border-radius: 10px; margin: 15px 0; overflow: hidden; border: none; }
+.exp-fill { background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+.stats-text { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; color: var(--text); }
+
+/* 탭 메뉴 */
+.tab-menu { display: flex; background: #18181b; padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
+.tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #a1a1aa; border-radius: 8px; font-size: 15px; }
+.tab-btn.active { background: var(--card); color: var(--text); font-weight: 700; }
+
+/* 리스트 아이템 */
+.input-group { display: flex; gap: 8px; margin-bottom: 20px; width: 100%; }
+.item-row { background: var(--card); padding: 16px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+.item-row:active { background: #3f3f46; } 
+
+/* 기타 작은 버튼들 */
+.rank-btn { background: rgba(251, 191, 36, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 6px 12px; border-radius: 8px; font-size: 12px; }
+.logout-btn, .reset-btn { background: transparent; border: 1px solid var(--border); color: #a1a1aa; font-size: 12px; padding: 6px 12px; border-radius: 8px; }
+.suggest-btn { background: var(--green); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
 
 /* 🏆 1위 황금 아우라 */
-.ranker-aura { border: 3px solid var(--gold) !important; animation: ranker-glow 1.5s infinite alternate !important; }
-@keyframes ranker-glow { 0% { box-shadow: 0 0 10px var(--gold); } 100% { box-shadow: 0 0 30px var(--gold); } }
-
-.profile-box { background: var(--card); padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 20px; }
-.status-bar { background: #30363d; height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden; }
-.exp-fill { background: linear-gradient(90deg, var(--accent), #a371f7); height: 100%; width: 0%; transition: 0.3s; }
-
-.tab-menu { display: flex; gap: 5px; margin-bottom: 15px; }
-.tab-btn { flex: 1; padding: 8px; border: none; background: var(--card); color: var(--text); border-radius: 6px; cursor: pointer; }
-.tab-btn.active { background: var(--accent); color: white; font-weight: bold; }
-
-.input-group { display: flex; gap: 5px; margin-bottom: 15px; }
-input, select { background: var(--card); border: 1px solid #30363d; color: white; padding: 10px; border-radius: 6px; flex: 1; }
-.item-row { background: var(--card); padding: 12px; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #30363d; }
-
-.auth-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(13,23,30,0.95); display: flex; align-items: center; justify-content: center; z-index: 100; border-radius: 20px; }
-.ranking-card { background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid var(--gold); max-height: 80%; overflow-y: auto; width: 85%; }
-.rank-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 8px; }
-.badge-1 { background: var(--gold); color: black; }
-
-.login-btn, .add-btn, .shop-add-btn, .save-btn { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; }
-.rank-btn { background: var(--gold); color: black; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; margin-left: 5px; }
-.logout-btn, .reset-btn { background: none; border: 1px solid #30363d; color: #8b949e; font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
-.close-btn { margin-top: 20px; background: #30363d; color: white; border: none; padding: 10px; border-radius: 6px; width: 100%; cursor: pointer; }
-
-/* --- style.css 맨 아래에 추가하거나 기존 select 부분을 수정하세요 --- */
-
-/* 난이도 선택창 화살표 제거 및 고정 스타일 */
-select#q-diff {
-    -webkit-appearance: none;  /* 크롬, 사파리 화살표 제거 */
-    -moz-appearance: none;     /* 파이어폭스 화살표 제거 */
-    appearance: none;          /* 표준 화살표 제거 */
-    background-image: none !important;
-    cursor: default;           /* 마우스 커서를 기본으로 */
-    text-align: center;
-    border-color: #30363d;
-    color: var(--accent);      /* 고정된 느낌을 주기 위해 색상 변경 가능 */
-    font-weight: bold;
-    opacity: 1;                /* disabled 시 흐려지는 현상 방지 */
-}
-
-/* 크롬 등에서 disabled 배경색 고정 */
-select#q-diff:disabled {
-    background-color: var(--card);
-    color: var(--accent);
-}
+.ranker-aura { border: 2px solid var(--gold) !important; animation: ranker-glow 2s infinite alternate !important; }
+@keyframes ranker-glow { 0% { box-shadow: inset 0 0 10px rgba(251,191,36,0.1), 0 0 10px rgba(251,191,36,0.2); } 100% { box-shadow: inset 0 0 20px rgba(251,191,36,0.2), 0 0 30px rgba(251,191,36,0.4); } }
