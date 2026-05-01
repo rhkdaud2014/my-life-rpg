@@ -1,22 +1,20 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 :root {
-    /* 🌙 세련된 다크 모드 (완전 검은색이 아닌 부드러운 다크 그레이) */
-    --bg: #18181b;       /* 앱 배경 (진한 회색) */
-    --card: #27272a;     /* 카드 배경 (조금 더 밝은 회색) */
+    --bg: #18181b;       /* 앱 배경 */
+    --card: #27272a;     /* 카드 배경 */
     --text: #f4f4f5;     /* 밝은 텍스트 */
     --accent: #3b82f6;   /* 블루 포인트 */
     --green: #10b981; 
     --gold: #fbbf24; 
     --red: #ef4444;
-    --border: #3f3f46;   /* 은은한 테두리 색상 */
+    --border: #3f3f46;   /* 은은한 테두리 */
 }
 
-/* 🌟 모든 요소의 크기 계산을 테두리 기준으로 변경 (짤림 방지 핵심) */
 * { box-sizing: border-box; }
 
 body { 
-    background: #09090b; /* PC 바탕화면은 더 어둡게 */
+    background: #09090b; 
     color: var(--text); 
     font-family: 'Pretendard', sans-serif; 
     display: flex; 
@@ -40,7 +38,6 @@ body {
 
 .game-container::-webkit-scrollbar { display: none; }
 
-/* 로그인 화면 */
 .auth-overlay { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
     background: linear-gradient(135deg, rgba(24,24,27,0.95) 0%, rgba(39,39,42,0.95) 100%); 
@@ -57,14 +54,12 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 .auth-box h2 { margin-top: 0; font-size: 24px; font-weight: 700; margin-bottom: 30px; letter-spacing: -0.5px; color: var(--text); }
-.auth-box input { margin-bottom: 12px; width: 100%; padding: 15px; font-size: 15px; }
 
-/* 공통 Input & Select */
 input, select { 
     background: #18181b; border: 1px solid var(--border); color: var(--text); 
     padding: 14px; border-radius: 12px; flex: 1; outline: none; transition: 0.2s;
     font-family: 'Pretendard', sans-serif; font-size: 14px;
-    min-width: 0; /* 🌟 입력칸이 길어져도 화면 밖으로 안 나가게 방지 */
+    min-width: 0; 
 }
 input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
 
@@ -76,48 +71,54 @@ select {
 button { font-family: 'Pretendard', sans-serif; font-weight: 600; cursor: pointer; transition: 0.1s; }
 button:active { transform: scale(0.96); } 
 
-.auth-btns { display: flex; gap: 10px; margin-top: 10px; }
-.login-btn, .save-btn, .signup-btn { 
-    padding: 14px; border-radius: 12px; flex: 1; font-size: 15px;
+.save-btn { 
+    padding: 14px; border-radius: 12px; font-size: 15px; 
+    background: var(--accent); color: white; border: none; width: 100%;
 }
-.login-btn, .save-btn { background: var(--accent); color: white; border: none; }
-.signup-btn { background: transparent; border: 1px solid var(--border); color: var(--text); }
 
-/* 🌟 상점 등록 & 퀘스트 추가 버튼 (짤림 완벽 방지) */
+.google-btn {
+    background: #ffffff; color: #1f2937; border: 1px solid #d1d5db;
+    padding: 14px; border-radius: 12px; width: 100%; font-size: 15px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: 0.2s;
+}
+.google-btn:active { background: #f3f4f6; transform: scale(0.98); }
+
 .add-btn, .shop-add-btn { 
     background: var(--accent); color: white; border: none; 
-    border-radius: 12px; 
-    flex: 0 0 65px; /* 버튼의 너비를 65px로 단단하게 고정 */
-    font-size: 14px;
-    white-space: nowrap; /* 글씨가 두 줄로 쪼개지는 것 방지 */
+    border-radius: 12px; flex: 0 0 65px; font-size: 14px; white-space: nowrap; 
 }
 
-/* 프로필 영역 */
 .profile-box { background: var(--card); padding: 25px 20px; border-radius: 20px; text-align: center; margin-bottom: 25px; border: 1px solid var(--border); }
 #p-name { margin: 0 0 5px 0; font-size: 22px; font-weight: 700; color: var(--text); }
 .bio-text { margin: 0; color: #a1a1aa; font-size: 14px; margin-bottom: 15px; }
 .small-btn { background: transparent; border: 1px solid var(--border); color: #a1a1aa; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
 
-/* 경험치 바 */
 .status-bar { background: #18181b; height: 12px; border-radius: 10px; margin: 15px 0; overflow: hidden; border: none; }
 .exp-fill { background: linear-gradient(90deg, #3b82f6, #8b5cf6); height: 100%; width: 0%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
 .stats-text { font-size: 16px; font-weight: 700; letter-spacing: 0.5px; color: var(--text); }
 
-/* 탭 메뉴 */
 .tab-menu { display: flex; background: #18181b; padding: 4px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
 .tab-btn { flex: 1; padding: 10px; border: none; background: transparent; color: #a1a1aa; border-radius: 8px; font-size: 15px; }
 .tab-btn.active { background: var(--card); color: var(--text); font-weight: 700; }
 
-/* 리스트 아이템 */
 .input-group { display: flex; gap: 8px; margin-bottom: 20px; width: 100%; }
-.item-row { background: var(--card); padding: 16px; border-radius: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-.item-row:active { background: #3f3f46; } 
 
-/* 기타 작은 버튼들 */
+.item-row { 
+    background: var(--card); padding: 12px 16px; border-radius: 16px; margin-bottom: 10px; 
+    display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); 
+    transition: all 0.2s ease;
+}
+.item-row:active { transform: scale(0.98); background: #3f3f46; } 
+
 .rank-btn { background: rgba(251, 191, 36, 0.1); color: var(--gold); border: 1px solid var(--gold); padding: 6px 12px; border-radius: 8px; font-size: 12px; }
 .logout-btn, .reset-btn { background: transparent; border: 1px solid var(--border); color: #a1a1aa; font-size: 12px; padding: 6px 12px; border-radius: 8px; }
 .suggest-btn { background: var(--green); color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; }
 
-/* 🏆 1위 황금 아우라 */
 .ranker-aura { border: 2px solid var(--gold) !important; animation: ranker-glow 2s infinite alternate !important; }
 @keyframes ranker-glow { 0% { box-shadow: inset 0 0 10px rgba(251,191,36,0.1), 0 0 10px rgba(251,191,36,0.2); } 100% { box-shadow: inset 0 0 20px rgba(251,191,36,0.2), 0 0 30px rgba(251,191,36,0.4); } }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
