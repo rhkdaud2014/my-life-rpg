@@ -70,10 +70,11 @@ function initFirebase() {
 
     auth.onAuthStateChanged(user => {
         currentUser = user;
-        // 로그인이 완료되었다면 펜딩 키를 지워줍니다.
-        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
-
+        
+        // 🌟 로그인이 확인되면 무조건 펜딩 키를 지웁니다.
         if (user) {
+            sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+            
             const isGuestToReal = localStorage.getItem('lifeRpgIsGuest') === 'true';
             const guestDataStr = localStorage.getItem('lifeRpgGuestData');
 
@@ -100,9 +101,22 @@ function initFirebase() {
             $("main-game").style.display = "block";
             updateUI();
         } else {
-            // 🌟 리다이렉트 중일 때는 로딩 메시지를 보여주며 첫 화면으로 튕기는 걸 막습니다.
+            // 🌟 유저 정보가 없는데 리다이렉트 중이라면?
+            const isRedirecting = sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1";
+            
             if (isRedirecting) {
                 showAuthMessage("로그인 정보를 불러오는 중...");
+                
+                // 🔥 [핵심] 아이폰 무한 로딩 방지: 8초 뒤에도 소식이 없으면 강제로 로그인 버튼 복구
+                setTimeout(() => {
+                    if (!currentUser && sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1") {
+                        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+                        showAuthMessage("로그인 시간이 초과되었습니다. 다시 시도해주세요.");
+                        $("auth-section").style.display = "flex";
+                        $("main-game").style.display = "none";
+                    }
+                }, 8000); 
+
             } else {
                 state = createDefaultState();
                 $("auth-section").style.display = "flex";
