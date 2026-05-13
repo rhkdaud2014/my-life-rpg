@@ -150,6 +150,35 @@ async function loginWithGoogle() {
     }
 }
 
+// 🌟 [임시] 이메일로 로그인하는 함수
+async function loginWithEmail() {
+    const email = $("login-email").value.trim();
+    const pw = $("login-pw").value;
+
+    if (!email || !pw) {
+        showAuthMessage("이메일과 비밀번호를 모두 입력해주세요.");
+        return;
+    }
+
+    try {
+        // 파이어베이스에 이메일/비밀번호 로그인 요청
+        await firebase.auth().signInWithEmailAndPassword(email, pw);
+        
+        // 로그인이 성공하면 기존에 만들어둔 onAuthStateChanged가 알아서 게임 화면으로 넘겨줍니다!
+        $("login-email").value = "";
+        $("login-pw").value = "";
+        
+    } catch (error) {
+        console.error("이메일 로그인 에러:", error);
+        // 사용자에게 에러 이유를 친절하게 알려줌
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            showAuthMessage("이메일이나 비밀번호가 일치하지 않습니다.");
+        } else {
+            showAuthMessage("로그인 실패: " + error.message);
+        }
+    }
+}
+
 function startGuestModeWithWarning() {
     if (confirm("⚠️ 게스트 모드는 기기 변경/앱 삭제 시 데이터가 날아갑니다. (나중에 구글 로그인 시 연동 가능) 시작할까요?")) startGuestMode();
 }
