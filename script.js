@@ -115,41 +115,51 @@ async function handleRedirectResult() {
     finally { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); }
 }
 
-async function loginWithGoogle() {
-    // 현재 환경이 안드로이드/iOS 네이티브 앱 내부인지 확인
-    const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+function loginWithGoogle() {
+    // 🌟 1. 버튼을 눌렀는지 알 수 있게 즉시 글씨를 띄워줍니다!
+    showAuthMessage("구글 연결 중... 화면이 넘어갑니다 🚀");
+
+    const isNative = typeof window !== 'undefined' && 
+                     window.Capacitor && 
+                     window.Capacitor.isNativePlatform && 
+                     window.Capacitor.isNativePlatform();
 
     if (isNative) {
-        try {
-            await Capacitor.Plugins.GoogleAuth.initialize({
-                clientId: "394166677930-p5mc4l5d32ef7rf9hrergbjkl657inmm.apps.googleusercontent.com",
-                scopes: ['profile', 'email'],
-                grantOfflineAccess: true
-            });
-            
-            const googleUser = await Capacitor.Plugins.GoogleAuth.signIn();
-            const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
-            await firebase.auth().signInWithCredential(credential);
-            
-        } catch (error) {
-            console.error("네이티브 로그인 에러:", error);
-            showAuthMessage("로그인을 취소했거나 오류가 발생했습니다.");
-        }
+        // 네이티브 앱 환경 (비동기 허용됨)
+        (async () => {
+            try {
+                await Capacitor.Plugins.GoogleAuth.initialize({
+                    clientId: "394166677930-p5mc4l5d32ef7rf9hrergbjkl657inmm.apps.googleusercontent.com",
+                    scopes: ['profile', 'email'],
+                    grantOfflineAccess: true
+                });
+                const googleUser = await Capacitor.Plugins.GoogleAuth.signIn();
+                const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+                await firebase.auth().signInWithCredential(credential);
+            } catch (error) {
+                showAuthMessage("로그인 실패: " + error.message);
+            }
+        })();
     } else {
-        // 일반 PC 또는 모바일(웹앱) 브라우저 환경
-        const provider = new firebase.auth.GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
+        // 🌟 2. 웹 / 아이폰 웹앱 환경 (지연 없이 즉시 실행!)
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: "select_account" });
 
-        // 🌟 기기 종류를 파악합니다 (아이폰, 아이패드, 안드로이드 등 모바일 기기인지)
-        const isMobileWeb = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const isMobileWeb = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-        if (isMobileWeb) {
-            // 모바일 웹앱에서는 팝업이 막히므로 페이지 이동(Redirect) 방식을 사용합니다.
-            sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
-            firebase.auth().signInWithRedirect(provider);
-        } else {
-            // PC 크롬 등에서는 기존처럼 팝업을 띄웁니다.
-            firebase.auth().signInWithPopup(provider);
+            if (isMobileWeb) {
+                // 아이폰은 팝업 대신 무조건 페이지 이동! (await 없이 즉시 쏴버림)
+                sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
+                firebase.auth().signInWithRedirect(provider);
+            } else {
+                // PC는 기존처럼 팝업
+                firebase.auth().signInWithPopup(provider).catch(err => {
+                    showAuthMessage("로그인 창 띄우기 실패: " + err.message);
+                });
+            }
+        } catch (err) {
+            showAuthMessage("에러 발생: " + err.message);
         }
     }
 }
