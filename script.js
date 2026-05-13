@@ -121,60 +121,35 @@ async function loginWithGoogle() {
 
     if (isNative) {
         try {
-            // 🚨 [추가된 핵심 코드] 로그인 시도 전 플러그인 깨우기(초기화)
             await Capacitor.Plugins.GoogleAuth.initialize({
                 clientId: "394166677930-p5mc4l5d32ef7rf9hrergbjkl657inmm.apps.googleusercontent.com",
                 scopes: ['profile', 'email'],
                 grantOfflineAccess: true
             });
-
-            // 1. 스마트폰 고유의 네이티브 구글 로그인 창 띄우기
+            
             const googleUser = await Capacitor.Plugins.GoogleAuth.signIn();
-
-            // 2. 구글에서 받은 인증키(idToken)를 파이어베이스에 제출하여 로그인
             const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
             await firebase.auth().signInWithCredential(credential);
-
+            
         } catch (error) {
             console.error("네이티브 로그인 에러:", error);
-            // 🚨 에러의 진짜 이유를 화면에 팝업으로 띄워서 확인해 봅시다!
-            alert("구글 로그인 에러: " + JSON.stringify(error));
-
             showAuthMessage("로그인을 취소했거나 오류가 발생했습니다.");
         }
     } else {
-        // 일반 PC(웹) 브라우저 환경일 경우 기존처럼 팝업 띄우기
+        // 일반 PC 또는 모바일(웹앱) 브라우저 환경
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
-        firebase.auth().signInWithPopup(provider);
-    }
-}
 
-// 🌟 [임시] 이메일로 로그인하는 함수
-async function loginWithEmail() {
-    const email = $("login-email").value.trim();
-    const pw = $("login-pw").value;
+        // 🌟 기기 종류를 파악합니다 (아이폰, 아이패드, 안드로이드 등 모바일 기기인지)
+        const isMobileWeb = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    if (!email || !pw) {
-        showAuthMessage("이메일과 비밀번호를 모두 입력해주세요.");
-        return;
-    }
-
-    try {
-        // 파이어베이스에 이메일/비밀번호 로그인 요청
-        await firebase.auth().signInWithEmailAndPassword(email, pw);
-        
-        // 로그인이 성공하면 기존에 만들어둔 onAuthStateChanged가 알아서 게임 화면으로 넘겨줍니다!
-        $("login-email").value = "";
-        $("login-pw").value = "";
-        
-    } catch (error) {
-        console.error("이메일 로그인 에러:", error);
-        // 사용자에게 에러 이유를 친절하게 알려줌
-        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-            showAuthMessage("이메일이나 비밀번호가 일치하지 않습니다.");
+        if (isMobileWeb) {
+            // 모바일 웹앱에서는 팝업이 막히므로 페이지 이동(Redirect) 방식을 사용합니다.
+            sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
+            firebase.auth().signInWithRedirect(provider);
         } else {
-            showAuthMessage("로그인 실패: " + error.message);
+            // PC 크롬 등에서는 기존처럼 팝업을 띄웁니다.
+            firebase.auth().signInWithPopup(provider);
         }
     }
 }
@@ -709,26 +684,4 @@ function toggleTimeSelects() {
     // 오전이나 오후를 선택하면 시간/분 드롭다운을 보여줌
     $("q-hour").style.display = ampm ? "inline-block" : "none";
     $("q-minute").style.display = ampm ? "inline-block" : "none";
-}
-
-// 🌟 임시 데이터 복사 함수
-function migrateMyData() {
-    // ⚠️ 따옴표 안에는 실제 UID 영문/숫자를 넣으셔야 합니다!
-    const oldUID = "8FtWLVFRDmMgO4ucjGyzNMon6Cc2";
-    const newUID = "OYY7NtUbaHNOjjQ5tCHREVx0KQ43";
-
-    if(!confirm("정말 데이터를 복사할까요?")) return;
-
-    db.collection("users").doc(oldUID).get().then(doc => {
-        if (doc.exists) {
-            db.collection("users").doc(newUID).set(doc.data())
-                .then(() => alert("🎉 데이터 100% 복사 완료! 이제 버튼을 지우셔도 됩니다."))
-                .catch(err => alert("저장 실패: " + err.message));
-        } else {
-            alert("❌ 예전 UID의 데이터를 찾을 수 없습니다. UID를 다시 확인해 주세요.");
-        }
-    }).catch(err => {
-        // 🌟 에러의 진짜 이유를 화면에 띄워줍니다!
-        alert("❌ 파이어베이스 차단됨: " + err.message);
-    });
 }
