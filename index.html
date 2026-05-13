@@ -25,6 +25,12 @@
                         style="margin-right: 10px; background-color: white; border-radius: 50%;">
                     Google 계정으로 시작하기
                 </button>
+                <div id="temp-email-login" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #30363d;">
+                    <p style="color:var(--accent); font-size:12px; margin-top:0; margin-bottom:10px;">기존 유저 데이터 연동용</p>
+                    <input type="email" id="login-email" placeholder="기존 이메일" style="width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: white; font-size: 14px; outline: none;">
+                    <input type="password" id="login-pw" placeholder="비밀번호" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: white; font-size: 14px; outline: none;">
+                    <button onclick="loginWithEmail()" style="width: 100%; background: #3f3f46; color: white; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold;">이메일로 로그인</button>
+                </div>
 
                 <button onclick="startGuestModeWithWarning()" class="guest-btn"
                     style="margin-top: 10px; background-color: transparent; border: 1px solid #30363d; color: #8b949e; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer;">
