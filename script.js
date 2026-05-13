@@ -8,7 +8,7 @@ const firebaseConfig = {
 };
 
 // 🌟 주/월 통합
-const TABS = { daily: "일간", weekly: "주/월", yearly: "년간" };
+const TABS = { daily: "일간", weekly: "주/월", yearly: "연간" };
 
 const DIFFICULTY_BY_TAB = {
     [TABS.daily]: { label: "쉬움", exp: 10, gold: 50 },
@@ -19,8 +19,9 @@ const DIFFICULTY_BY_TAB = {
 const LEGACY_TABS = {
     "주간": TABS.weekly, "월간": TABS.weekly, "주/월": TABS.weekly,
     "daily": TABS.daily, "weekly": TABS.weekly, "yearly": TABS.yearly,
-    "일간": TABS.daily, "년간": TABS.yearly
+    "일간": TABS.daily, "연간": TABS.yearly
 };
+
 
 const DEFAULT_NAME = "플레이어";
 const DEFAULT_BIO = "나의 일상을 퀘스트로!";
@@ -53,6 +54,12 @@ function initFirebase() {
     auth = firebase.auth();
     db = firebase.firestore();
 
+    // 🔥 꿀팁 1: 오프라인 모드 활성화 (인터넷 끊겨도 작동하게 함)
+    db.enablePersistence()
+        .catch(function (err) {
+            console.warn("오프라인 모드 활성화 실패 (인터넷 연결 시 자동 동기화됨):", err.code);
+        });
+
     handleRedirectResult();
 
     if (localStorage.getItem('lifeRpgIsGuest') === 'true') {
@@ -62,10 +69,33 @@ function initFirebase() {
     auth.onAuthStateChanged(user => {
         currentUser = user;
         if (user) {
+            // 🔥 꿀팁 2: 게스트 데이터가 있는지 확인하고 연동 프로세스 진행
+            const isGuestToReal = localStorage.getItem('lifeRpgIsGuest') === 'true';
+            const guestDataStr = localStorage.getItem('lifeRpgGuestData');
+
             isGuestMode = false;
             $("auth-section").style.display = "none";
             $("main-game").style.display = "block";
+
+            // 게스트 데이터가 남아있다면 계정에 덮어씌울지 묻기
+            if (isGuestToReal && guestDataStr) {
+                if (confirm("게스트 모드에서 플레이한 데이터를 구글 계정에 연동하시겠습니까?\n(취소 시 기존 구글 계정 데이터를 불러옵니다.)")) {
+                    try {
+                        state = normalizeState(JSON.parse(guestDataStr));
+                        saveData(); // 파이어베이스에 게스트 데이터 저장!
+                        alert("데이터가 성공적으로 구글 계정에 연동되었습니다!");
+                    } catch (e) { console.error(e); }
+                }
+                // 연동 여부와 상관없이 게스트 흔적은 지워줌
+                localStorage.removeItem('lifeRpgIsGuest');
+                localStorage.removeItem('lifeRpgGuestData');
+
+                checkAndResetQuests(); updateUI(); return;
+            }
+
+            // 게스트 연동이 아니면 정상적으로 서버에서 내 데이터 불러오기
             loadData();
+
         } else if (isGuestMode) {
             $("auth-section").style.display = "none";
             $("main-game").style.display = "block";
@@ -81,23 +111,47 @@ function initFirebase() {
 
 async function handleRedirectResult() {
     if (sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) !== "1") return;
-    try { await auth.getRedirectResult(); } catch (err) { } 
+    try { await auth.getRedirectResult(); } catch (err) { }
     finally { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); }
 }
 
-function loginWithGoogle() {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: "select_account" });
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
-        firebase.auth().signInWithRedirect(provider);
+async function loginWithGoogle() {
+    // 현재 환경이 안드로이드/iOS 네이티브 앱 내부인지 확인
+    const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+
+    if (isNative) {
+        try {
+            // 🚨 [추가된 핵심 코드] 로그인 시도 전 플러그인 깨우기(초기화)
+            await Capacitor.Plugins.GoogleAuth.initialize({
+                clientId: "394166677930-p5mc4l5d32ef7rf9hrergbjkl657inmm.apps.googleusercontent.com",
+                scopes: ['profile', 'email'],
+                grantOfflineAccess: true
+            });
+
+            // 1. 스마트폰 고유의 네이티브 구글 로그인 창 띄우기
+            const googleUser = await Capacitor.Plugins.GoogleAuth.signIn();
+
+            // 2. 구글에서 받은 인증키(idToken)를 파이어베이스에 제출하여 로그인
+            const credential = firebase.auth.GoogleAuthProvider.credential(googleUser.authentication.idToken);
+            await firebase.auth().signInWithCredential(credential);
+
+        } catch (error) {
+            console.error("네이티브 로그인 에러:", error);
+            // 🚨 에러의 진짜 이유를 화면에 팝업으로 띄워서 확인해 봅시다!
+            alert("구글 로그인 에러: " + JSON.stringify(error));
+
+            showAuthMessage("로그인을 취소했거나 오류가 발생했습니다.");
+        }
     } else {
+        // 일반 PC(웹) 브라우저 환경일 경우 기존처럼 팝업 띄우기
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
         firebase.auth().signInWithPopup(provider);
     }
 }
 
 function startGuestModeWithWarning() {
-    if (confirm("⚠️ 게스트 모드는 앱 삭제시 데이터가 날아갑니다. 시작할까요?")) startGuestMode();
+    if (confirm("⚠️ 게스트 모드는 기기 변경/앱 삭제 시 데이터가 날아갑니다. (나중에 구글 로그인 시 연동 가능) 시작할까요?")) startGuestMode();
 }
 
 function startGuestMode() {
@@ -121,13 +175,13 @@ async function saveData() {
         return;
     }
     if (!currentUser || !db) return;
-    try { await db.collection("users").doc(currentUser.uid).set({ ...state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); } 
+    try { await db.collection("users").doc(currentUser.uid).set({ ...state, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); }
     catch (err) { }
 }
 
 async function loadData() {
     if (isGuestMode) {
-        try { state = normalizeState(JSON.parse(localStorage.getItem('lifeRpgGuestData'))); } 
+        try { state = normalizeState(JSON.parse(localStorage.getItem('lifeRpgGuestData'))); }
         catch (err) { state = createDefaultState(); }
         checkAndResetQuests(); updateUI(); return;
     }
@@ -148,20 +202,20 @@ function checkAndResetQuests() {
     if (state.lastLogin !== today) {
         const currentDay = new Date().getDay(); // 0:일, 1:월
         const currentDate = new Date().getDate(); // 1~31일
-        
+
         state.quests = state.quests.filter(q => {
-            if (!q.isCompleted) return true; 
+            if (!q.isCompleted) return true;
 
             if (q.isRepeat) {
                 if (q.tab === TABS.daily) { q.isCompleted = false; isChanged = true; return true; }
                 // 🌟 주/월: 월요일이거나 매월 1일일 때 초기화
                 if (q.tab === TABS.weekly && (currentDay === 1 || currentDate === 1)) { q.isCompleted = false; isChanged = true; return true; }
                 if (q.tab === TABS.yearly && new Date().getMonth() === 0 && currentDate === 1) { q.isCompleted = false; isChanged = true; return true; }
-                return true; 
+                return true;
             } else {
                 // 혹시 남아있는 과거의 1회성 퀘스트 찌꺼기 청소
-                if (q.tab === TABS.daily) { isChanged = true; return false; } 
-                if (q.tab === TABS.weekly && (currentDay === 1 || currentDate === 1)) { isChanged = true; return false; } 
+                if (q.tab === TABS.daily) { isChanged = true; return false; }
+                if (q.tab === TABS.weekly && (currentDay === 1 || currentDate === 1)) { isChanged = true; return false; }
                 if (q.tab === TABS.yearly && new Date().getMonth() === 0 && currentDate === 1) { isChanged = true; return false; }
                 return true;
             }
@@ -196,7 +250,8 @@ function normalizeQuest(quest) {
         exp: Math.max(0, parseInt(quest.exp) || reward.exp),
         gold: Math.max(0, parseInt(quest.gold) || reward.gold),
         isCompleted: !!quest.isCompleted,
-        isRepeat: !!quest.isRepeat
+        isRepeat: !!quest.isRepeat,
+        deadline: quest.deadline || null // 🌟 이 한 줄이 빠져서 타이머가 증발하고 있었습니다!
     };
 }
 
@@ -207,13 +262,19 @@ function normalizeShopItem(item) {
 
 function updateUI() {
     state = normalizeState(state);
-    $("p-name").innerText = state.name;
-    $("p-bio").innerText = state.bio;
-    $("lv").innerText = state.lv;
-    $("gold").innerText = state.gold;
-    $("exp-bar").style.width = `${state.exp}%`;
-    $("exp-text").innerText = `${state.exp}% (${state.exp}/100)`; 
-    $("q-diff").value = DIFFICULTY_BY_TAB[state.currentTab].label;
+
+    if ($("p-name")) $("p-name").innerText = state.name;
+    if ($("p-bio")) $("p-bio").innerText = state.bio;
+    if ($("lv")) $("lv").innerText = state.lv;
+    if ($("gold")) $("gold").innerText = state.gold;
+    if ($("exp-bar")) $("exp-bar").style.width = `${state.exp}%`;
+    if ($("exp-text")) $("exp-text").innerText = `${state.exp}% (${state.exp}/100)`;
+    if ($("q-diff")) $("q-diff").value = DIFFICULTY_BY_TAB[state.currentTab].label;
+
+    // 🌟 주/월, 연간 탭에서 타이머 상자를 깔끔하게 숨겨주는 마법의 코드!
+    if ($("timer-ui-container")) {
+        $("timer-ui-container").style.display = (state.currentTab === TABS.daily) ? "flex" : "none";
+    }
 
     document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.textContent.trim() === state.currentTab));
     updateGuestNotice();
@@ -225,9 +286,9 @@ function updateUI() {
 
 function addHistory(msg) {
     const today = new Date();
-    const timeStr = `${today.getMonth()+1}/${today.getDate()} ${today.getHours().toString().padStart(2,'0')}:${today.getMinutes().toString().padStart(2,'0')}`;
+    const timeStr = `${today.getMonth() + 1}/${today.getDate()} ${today.getHours().toString().padStart(2, '0')}:${today.getMinutes().toString().padStart(2, '0')}`;
     state.history.unshift({ time: timeStr, msg: msg });
-    if(state.history.length > 50) state.history.pop();
+    if (state.history.length > 50) state.history.pop();
 }
 
 function toggleRepeat() {
@@ -241,41 +302,116 @@ function toggleRepeat() {
 function addQuest() {
     const text = $("q-input").value.trim();
     if (!text) return;
+
+    let deadline = null;
+
+    // 🌟 현재 탭이 '일간'일 때만 마감 시간을 계산해서 넣습니다!
+    if (state.currentTab === TABS.daily && $("q-ampm")) {
+        const ampm = $("q-ampm").value;
+        if (ampm) {
+            let hour = parseInt($("q-hour").value);
+            const minute = parseInt($("q-minute").value);
+
+            if (ampm === "PM" && hour < 12) hour += 12;
+            if (ampm === "AM" && hour === 12) hour = 0;
+
+            const targetDate = new Date();
+            targetDate.setHours(hour, minute, 0, 0);
+
+            if (targetDate.getTime() < Date.now()) {
+                if (!confirm("이미 지난 시간입니다. 그래도 추가할까요?")) return;
+            }
+            deadline = targetDate.getTime();
+        }
+    }
+
     const reward = DIFFICULTY_BY_TAB[state.currentTab];
     state.quests.push({
         id: createId(), text, diff: reward.label, tab: state.currentTab,
-        exp: reward.exp, gold: reward.gold, isCompleted: false, isRepeat: isRepeatMode
+        exp: reward.exp, gold: reward.gold, isCompleted: false, isRepeat: isRepeatMode,
+        deadline: deadline
     });
-    
+
     isRepeatMode = false;
     $("q-repeat-btn").innerText = "1회성";
     $("q-repeat-btn").style.cssText = "flex: 0 0 65px; background:transparent; border:1px solid var(--border); color:#a1a1aa; border-radius:12px; font-size:12px; padding:0; transition:0.2s;";
-    
+
     $("q-input").value = "";
+    if ($("q-ampm")) { $("q-ampm").value = ""; toggleTimeSelects(); }
+
     updateUI(); saveData();
 }
 
-// 🌟 1회성 퀘스트 즉시 삭제 로직
+// 🌟 1회성 퀘스트 즉시 삭제 및 레벨업 로직
 function completeQuest(id) {
     const quest = state.quests.find(q => String(q.id) === String(id));
     if (!quest || quest.isCompleted) return;
-    
+
     quest.isCompleted = true;
     state.exp += quest.exp; state.gold += quest.gold;
     addHistory(`[도전 성공] ${quest.text} (+${quest.exp}EXP, +${quest.gold}G)`);
-    
+
+    let isLeveledUp = false; 
+
     while (state.exp >= 100) {
         state.lv += 1; state.exp -= 100;
         addHistory(`🎉 레벨업! Lv.${state.lv} 달성!`);
-        alert(`LEVEL UP! Lv.${state.lv}`);
+        isLeveledUp = true; 
+        // 🗑️ 기존에 있던 alert(`LEVEL UP! Lv.${state.lv}`); 부분은 완전히 삭제되었습니다!
     }
 
-    // [1회성] 퀘스트라면 완료 즉시 배열에서 아예 지워버림
     if (!quest.isRepeat) {
         state.quests = state.quests.filter(q => String(q.id) !== String(id));
     }
 
     updateUI(); saveData();
+
+    // 🌟 경험치 적용 후 애니메이션 및 진동 팝업 실행
+    if (isLeveledUp) {
+        const lvElement = $("lv"); 
+        if (lvElement) {
+            lvElement.classList.add("level-up-anim"); 
+            setTimeout(() => { lvElement.classList.remove("level-up-anim"); }, 800);
+        }
+        
+        // 🌟 새로운 고급 팝업 호출!
+        showLevelUpUI(state.lv);
+    }
+}
+
+// 🌟 화면 정중앙에 화려한 레벨업 UI를 띄우고 진동을 울리는 함수
+function showLevelUpUI(newLevel) {
+    // 1. 스마트폰 진동 효과 (징- 징-)
+    // 기기에서 진동 API를 지원하는 경우 200ms 진동 -> 100ms 대기 -> 200ms 진동
+    if (navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+    }
+    
+    // 2. 화면 전체를 덮는 모달 생성
+    let overlay = $("levelup-overlay");
+    if (!overlay) {
+        // HTML에 직접 쓰지 않아도 자바스크립트가 알아서 예쁜 화면을 뚝딱 만들어냅니다!
+        overlay = document.createElement("div");
+        overlay.id = "levelup-overlay";
+        overlay.className = "levelup-bg";
+        overlay.innerHTML = `
+            <div class="levelup-content">
+                <div style="font-size:70px; margin-bottom:5px; text-shadow: 0px 5px 15px rgba(0,0,0,0.5);">✨🏆✨</div>
+                <h2 class="levelup-title">LEVEL UP!</h2>
+                <div id="levelup-text" class="levelup-desc">Lv. ${newLevel} 달성</div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    } else {
+        $("levelup-text").innerText = `Lv. ${newLevel} 달성`;
+    }
+    
+    overlay.style.display = "flex";
+
+    // 3. 2.5초 뒤에 모달이 스르륵 사라지며 게임으로 복귀
+    setTimeout(() => {
+        overlay.style.display = "none";
+    }, 2500);
 }
 
 function deleteQuest(id) {
@@ -286,8 +422,10 @@ function deleteQuest(id) {
 
 function renderQuests() {
     const list = $("q-list");
+    if (!list) return;
+
     const filtered = state.quests.filter(q => q.tab === state.currentTab);
-    list.replaceChildren();
+    list.innerHTML = ""; 
 
     if (!filtered.length) {
         const empty = document.createElement("p");
@@ -301,25 +439,51 @@ function renderQuests() {
         row.className = "item-row";
         if (quest.isCompleted) { row.style.opacity = "0.4"; row.style.pointerEvents = "none"; }
 
+        // 왼쪽: 퀘스트 내용과 타이머 묶음
         const content = document.createElement("div");
-        content.style.cssText = "flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding-right: 15px;";
+        content.style.cssText = "flex: 1; cursor: pointer; display: flex; flex-direction: column; justify-content: center; padding-right: 15px;";
         content.addEventListener("click", () => { if(!quest.isCompleted) completeQuest(quest.id); });
 
-        const textSpan = document.createElement("span");
-        textSpan.textContent = `[${quest.diff}] ${quest.text} ${quest.isRepeat ? '🔁' : ''}`;
-        if (quest.isCompleted) textSpan.style.textDecoration = "line-through";
+        // 1. 퀘스트 텍스트 & 난이도 뱃지
+        const textDiv = document.createElement("div");
+        textDiv.style.cssText = "display: flex; align-items: center; gap: 8px;";
+        textDiv.innerHTML = `<span>${quest.text} ${quest.isRepeat ? '🔁' : ''}</span> <span class="diff-badge diff-${quest.diff}">${quest.diff}</span>`;
+        if (quest.isCompleted) textDiv.style.textDecoration = "line-through";
+        content.appendChild(textDiv);
+
+        // 2. 타이머 텍스트 (일간 탭이고 마감시간이 있을 때만 생성)
+        if (quest.deadline && quest.tab === TABS.daily) {
+            const timerDiv = document.createElement("div");
+            timerDiv.style.cssText = "margin-top: 4px;";
+            if (!quest.isCompleted) {
+                // 이 'quest-timer' 클래스가 있어야 아래 타이머 엔진이 작동합니다!
+                timerDiv.innerHTML = `<span class="quest-timer" data-deadline="${quest.deadline}" style="font-size:11px; color:var(--accent); font-weight:bold;">⏱️ 계산 중...</span>`;
+            } else {
+                timerDiv.innerHTML = `<span style="font-size:11px; color:var(--green); font-weight:bold;">✅ 달성 완료!</span>`;
+            }
+            content.appendChild(timerDiv);
+        }
+
+        // 오른쪽: 골드 보상과 삭제 버튼 묶음
+        const rightWrapper = document.createElement("div");
+        rightWrapper.style.cssText = "display: flex; align-items: center;";
 
         const rewardSpan = document.createElement("span");
-        rewardSpan.style.cssText = "color:var(--gold); font-size:11px; white-space:nowrap;";
+        rewardSpan.style.cssText = "color:var(--gold); font-size:12px; font-weight:bold;";
         rewardSpan.textContent = `+${quest.gold}G`;
 
-        content.append(textSpan, rewardSpan);
         const delBtn = document.createElement("button");
-        delBtn.style.cssText = "background:none; border:none; color:#555; cursor:pointer; font-size: 18px;";
+        delBtn.style.cssText = "background:none; border:none; color:#555; cursor:pointer; font-size: 18px; margin-left: 10px;";
         delBtn.textContent = "×";
         delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteQuest(quest.id); });
 
-        row.append(content, delBtn); list.appendChild(row);
+        rightWrapper.appendChild(rewardSpan);
+        rightWrapper.appendChild(delBtn);
+
+        // 최종 조립
+        row.appendChild(content);
+        row.appendChild(rightWrapper);
+        list.appendChild(row);
     });
 }
 
@@ -336,7 +500,7 @@ function buyItem(id) {
     const item = state.shopItems.find(i => String(i.id) === String(id));
     if (!item) return;
     if (state.gold < item.price) { alert("골드가 부족합니다."); return; }
-    
+
     state.gold -= item.price;
     addHistory(`[보상 구매] ${item.name} (-${item.price}G)`);
     alert(`'${item.name}' 보상을 획득했습니다!`);
@@ -389,7 +553,7 @@ function showHistory() {
 
 function closeHistory() { $("history-modal").style.display = "none"; }
 function setTab(tab) { state.currentTab = tab; updateUI(); }
-function toggleProfileEdit() { 
+function toggleProfileEdit() {
     const isEditing = $("profile-edit").style.display === "none";
     if (isEditing) { $("edit-name").value = state.name; $("edit-bio").value = state.bio; }
     $("profile-view").style.display = isEditing ? "none" : "block";
@@ -418,18 +582,35 @@ function suggestReward() {
         { name: "🖱️ 게이밍 기어/IT 기기 구매", price: 7000 },
         { name: "🎞️ 영화관에서 영화 관람", price: 1200 },
         { name: "🛀 입욕제 반신욕 힐링", price: 500 },
-        { name: "🎤 코인 노래방 1시간 열창", price: 300 },
-        { name: "💆‍♂️ 나를 위한 전신 마사지", price: 4000 }
+        { name: "🎤 코인 노래방 1시간 열창", price: 300 }
     ];
     const r = rewardSuggestions[Math.floor(Math.random() * rewardSuggestions.length)];
     $("s-input").value = r.name; $("s-price").value = r.price;
 }
 
-function updateGuestNotice() { const n = $("guest-notice"); if(n) n.style.display = isGuestMode ? "block" : "none"; }
-function showAuthMessage(msg) { const m = $("auth-msg"); if(m) m.innerText = msg; }
+// 🔥 꿀팁 2-1: 게스트 연동 안내 UI 업데이트 함수 수정 (로그인 유도 버튼 추가)
+function updateGuestNotice() {
+    const n = $("guest-notice");
+    if (n) {
+        if (isGuestMode) {
+            n.style.display = "block";
+            // 기존 텍스트를 버튼 형태로 변경하여 로그인을 유도
+            n.innerHTML = `<button onclick="loginWithGoogle()" style="width:100%; background:rgba(59, 130, 246, 0.1); border:1px solid var(--accent); color:var(--accent); padding:10px; border-radius:8px; font-size:13px; font-weight:bold; cursor:pointer;">⚠️ 현재 게스트 모드입니다.<br/>여기를 눌러 구글 로그인하고 데이터 보존하기!</button>`;
+        } else {
+            n.style.display = "none";
+        }
+    }
+}
+
+function showAuthMessage(msg) { const m = $("auth-msg"); if (m) m.innerText = msg; }
 function createId() { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 async function showRanking() {
-    $("ranking-modal").style.display = "flex"; $("ranking-list").textContent = "집계 중...";
+    if (isGuestMode) {
+        alert("🏆 랭킹 시스템은 구글 로그인 후 이용할 수 있습니다!\n로그인하고 다른 플레이어들과 레벨을 경쟁해 보세요.");
+        return;
+    }
+    $("ranking-modal").style.display = "flex";
+    $("ranking-list").textContent = "집계 중...";
     if (!db) { $("ranking-list").textContent = "랭킹 불러오기 실패"; return; }
     try {
         const snap = await db.collection("users").orderBy("lv", "desc").limit(10).get();
@@ -439,23 +620,81 @@ async function showRanking() {
             if (currentUser && doc.id === currentUser.uid) row.style.borderColor = "var(--accent)";
             row.textContent = `${r++}. ${data.name} (Lv.${data.lv})`; $("ranking-list").appendChild(row);
         });
-        if(snap.empty) $("ranking-list").textContent = "랭킹 없음";
-    } catch(e) { $("ranking-list").textContent = "랭킹 실패"; }
+        if (snap.empty) $("ranking-list").textContent = "랭킹 없음";
+    } catch (e) { $("ranking-list").textContent = "랭킹 실패"; }
 }
 function closeRanking() { $("ranking-modal").style.display = "none"; }
 async function checkIfRanker() {
-    if(isGuestMode || !currentUser || !db) { $("container").classList.remove("ranker-aura"); return; }
+    if (isGuestMode || !currentUser || !db) { $("container").classList.remove("ranker-aura"); return; }
     try {
         const snap = await db.collection("users").orderBy("lv", "desc").limit(1).get();
         const top = !snap.empty && snap.docs[0].id === currentUser.uid;
         $("container").classList.toggle("ranker-aura", top);
-        if(top) $("p-rank").innerText = "랭킹 1위";
-    } catch(e){}
+        if (top) $("p-rank").innerText = "랭킹 1위";
+    } catch (e) { }
 }
 function updateRankDisplay() { $("p-rank").innerText = state.lv < 10 ? "RANK: F" : state.lv < 30 ? "RANK: D" : state.lv < 60 ? "RANK: B" : "RANK: S"; }
 async function deleteAccount() {
-    if(!currentUser) { if(confirm("초기화할까요?")) { localStorage.clear(); location.reload(); } return; }
-    if(!confirm("계정 영구 삭제?")) return; if(prompt("'삭제' 입력") !== "삭제") return;
-    try { await db.collection("users").doc(currentUser.uid).delete(); await currentUser.delete(); alert("삭제 완료"); location.reload(); } 
-    catch(e) { alert("보안을 위해 재로그인 후 시도하세요."); auth.signOut(); }
+    if (!currentUser) { if (confirm("초기화할까요?")) { localStorage.clear(); location.reload(); } return; }
+    if (!confirm("계정 영구 삭제?")) return; if (prompt("'삭제' 입력") !== "삭제") return;
+    try { await db.collection("users").doc(currentUser.uid).delete(); await currentUser.delete(); alert("삭제 완료"); location.reload(); }
+    catch (e) { alert("보안을 위해 재로그인 후 시도하세요."); auth.signOut(); }
+}
+
+// 1. 퀘스트 추가 시 타이머 설정 (예: 30분)
+// 할 일 객체에 deadline 속성 추가: Date.now() + (30 * 60 * 1000)
+
+// 2. 글로벌 타이머 실행 (1초마다 화면 업데이트)
+// 🌟 1초마다 화면의 모든 타이머를 찾아내서 남은 시간을 계산하는 엔진
+setInterval(() => {
+    const timers = document.querySelectorAll('.quest-timer');
+    const now = Date.now();
+
+    timers.forEach(el => {
+        const deadline = parseInt(el.getAttribute('data-deadline'));
+        const timeLeft = deadline - now;
+
+        if (timeLeft <= 0) {
+            el.innerHTML = "⏳ 시간 초과!";
+            el.style.color = "var(--red)";
+        } else {
+            // 시간, 분, 초 계산
+            const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+            const paddedMins = minutes.toString().padStart(2, '0');
+            const paddedSecs = seconds.toString().padStart(2, '0');
+
+            // 1시간 이상 남았으면 시간+분 표시, 그 이하면 분+초 표시
+            if (hours > 0) {
+                el.innerHTML = `⏱️ ${hours}시간 ${paddedMins}분 남음`;
+            } else {
+                el.innerHTML = `⏱️ ${paddedMins}분 ${paddedSecs}초 남음`;
+            }
+        }
+    });
+}, 1000);
+function toggleTimeSelects() {
+    const ampm = $("q-ampm").value;
+    // 오전이나 오후를 선택하면 시간/분 드롭다운을 보여줌
+    $("q-hour").style.display = ampm ? "inline-block" : "none";
+    $("q-minute").style.display = ampm ? "inline-block" : "none";
+}
+
+// 🌟 임시 데이터 복사 함수
+function migrateMyData() {
+    const oldUID = "ot82XTKG8XZ7R3lMCQYHdpmrNKm1";
+    const newUID = "VbQ6eeRO5ENUT4z9t9vyy8P6ACc2";
+
+    if(!confirm("정말 데이터를 복사할까요?")) return;
+
+    db.collection("users").doc(oldUID).get().then(doc => {
+        if (doc.exists) {
+            db.collection("users").doc(newUID).set(doc.data())
+                .then(() => alert("🎉 데이터 100% 복사 완료! 이제 버튼을 지우셔도 됩니다."));
+        } else {
+            alert("❌ 예전 UID의 데이터를 찾을 수 없습니다. UID를 다시 확인해 주세요.");
+        }
+    });
 }
