@@ -684,6 +684,7 @@ function toggleTimeSelects() {
 
 // 🌟 임시 데이터 복사 함수
 function migrateMyData() {
+    // ⚠️ 따옴표 안에는 실제 UID 영문/숫자를 넣으셔야 합니다!
     const oldUID = "ot82XTKG8XZ7R3lMCQYHdpmrNKm1";
     const newUID = "VbQ6eeRO5ENUT4z9t9vyy8P6ACc2";
 
@@ -692,9 +693,13 @@ function migrateMyData() {
     db.collection("users").doc(oldUID).get().then(doc => {
         if (doc.exists) {
             db.collection("users").doc(newUID).set(doc.data())
-                .then(() => alert("🎉 데이터 100% 복사 완료! 이제 버튼을 지우셔도 됩니다."));
+                .then(() => alert("🎉 데이터 100% 복사 완료! 이제 버튼을 지우셔도 됩니다."))
+                .catch(err => alert("저장 실패: " + err.message));
         } else {
             alert("❌ 예전 UID의 데이터를 찾을 수 없습니다. UID를 다시 확인해 주세요.");
         }
+    }).catch(err => {
+        // 🌟 에러의 진짜 이유를 화면에 띄워줍니다!
+        alert("❌ 파이어베이스 차단됨: " + err.message);
     });
 }
