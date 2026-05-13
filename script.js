@@ -110,9 +110,17 @@ function initFirebase() {
 }
 
 async function handleRedirectResult() {
-    if (sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) !== "1") return;
-    try { await auth.getRedirectResult(); } catch (err) { }
-    finally { sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY); }
+    // 🌟 아이폰 웹앱(PWA)에서 메모리가 날아가는 현상을 방지하기 위해 조건문 삭제!
+    try {
+        const result = await auth.getRedirectResult();
+        if (result && result.user) {
+            console.log("리다이렉트 로그인 성공!");
+            // 결과가 성공적이면 onAuthStateChanged가 알아서 게임 화면으로 넘겨줍니다.
+        }
+    } catch (err) {
+        console.error("리다이렉트 로그인 에러:", err);
+        showAuthMessage("로그인 처리 중 에러가 발생했습니다.");
+    }
 }
 
 function loginWithGoogle() {
