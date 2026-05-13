@@ -54,22 +54,26 @@ function initFirebase() {
     auth = firebase.auth();
     db = firebase.firestore();
 
-    // 🔥 꿀팁 1: 오프라인 모드 활성화 (인터넷 끊겨도 작동하게 함)
-    db.enablePersistence()
-        .catch(function (err) {
-            console.warn("오프라인 모드 활성화 실패 (인터넷 연결 시 자동 동기화됨):", err.code);
-        });
+    db.enablePersistence().catch(err => {
+        console.warn("오프라인 모드 활성화 실패:", err.code);
+    });
 
     handleRedirectResult();
 
-    if (localStorage.getItem('lifeRpgIsGuest') === 'true') {
+    // 🌟 수정된 핵심 로직: 로그인을 하러 나간 상태(Redirect)인지 먼저 체크합니다.
+    const isRedirecting = sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1";
+
+    // 만약 로그인을 하러 나간 게 아니라면 게스트 모드인지 확인합니다.
+    if (!isRedirecting && localStorage.getItem('lifeRpgIsGuest') === 'true') {
         startGuestMode(); return;
     }
 
     auth.onAuthStateChanged(user => {
         currentUser = user;
+        // 로그인이 완료되었다면 펜딩 키를 지워줍니다.
+        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+
         if (user) {
-            // 🔥 꿀팁 2: 게스트 데이터가 있는지 확인하고 연동 프로세스 진행
             const isGuestToReal = localStorage.getItem('lifeRpgIsGuest') === 'true';
             const guestDataStr = localStorage.getItem('lifeRpgGuestData');
 
@@ -77,23 +81,18 @@ function initFirebase() {
             $("auth-section").style.display = "none";
             $("main-game").style.display = "block";
 
-            // 게스트 데이터가 남아있다면 계정에 덮어씌울지 묻기
             if (isGuestToReal && guestDataStr) {
-                if (confirm("게스트 모드에서 플레이한 데이터를 구글 계정에 연동하시겠습니까?\n(취소 시 기존 구글 계정 데이터를 불러옵니다.)")) {
+                if (confirm("게스트 데이터를 구글 계정에 연동할까요?")) {
                     try {
                         state = normalizeState(JSON.parse(guestDataStr));
-                        saveData(); // 파이어베이스에 게스트 데이터 저장!
-                        alert("데이터가 성공적으로 구글 계정에 연동되었습니다!");
+                        saveData();
+                        alert("데이터 연동 성공!");
                     } catch (e) { console.error(e); }
                 }
-                // 연동 여부와 상관없이 게스트 흔적은 지워줌
                 localStorage.removeItem('lifeRpgIsGuest');
                 localStorage.removeItem('lifeRpgGuestData');
-
                 checkAndResetQuests(); updateUI(); return;
             }
-
-            // 게스트 연동이 아니면 정상적으로 서버에서 내 데이터 불러오기
             loadData();
 
         } else if (isGuestMode) {
@@ -101,9 +100,14 @@ function initFirebase() {
             $("main-game").style.display = "block";
             updateUI();
         } else {
-            state = createDefaultState();
-            $("auth-section").style.display = "flex";
-            $("main-game").style.display = "none";
+            // 🌟 리다이렉트 중일 때는 로딩 메시지를 보여주며 첫 화면으로 튕기는 걸 막습니다.
+            if (isRedirecting) {
+                showAuthMessage("로그인 정보를 불러오는 중...");
+            } else {
+                state = createDefaultState();
+                $("auth-section").style.display = "flex";
+                $("main-game").style.display = "none";
+            }
         }
         updateGuestNotice();
     });
