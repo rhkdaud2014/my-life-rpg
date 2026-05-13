@@ -714,8 +714,8 @@ function toggleTimeSelects() {
 // 🌟 임시 데이터 복사 함수
 function migrateMyData() {
     // ⚠️ 따옴표 안에는 실제 UID 영문/숫자를 넣으셔야 합니다!
-    const oldUID = "ot82XTKG8XZ7R3lMCQYHdpmrNKm1";
-    const newUID = "VbQ6eeRO5ENUT4z9t9vyy8P6ACc2";
+    const oldUID = "8FtWLVFRDmMgO4ucjGyzNMon6Cc2";
+    const newUID = "OYY7NtUbaHNOjjQ5tCHREVx0KQ43";
 
     if(!confirm("정말 데이터를 복사할까요?")) return;
 
