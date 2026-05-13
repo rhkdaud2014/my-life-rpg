@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>Life RPG v1.2</title>
+    <title>Life RPG v1.3</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -57,31 +58,72 @@
                     <input type="text" id="edit-bio" placeholder="한 줄 다짐" style="margin: 8px 0;"><br>
                     <button type="button" onclick="saveProfile()" class="save-btn">저장</button>
                 </div>
-                <div id="p-rank" class="rank-display" style="margin-top: 10px; font-weight: bold; color: var(--gold);">RANK: F</div>
-                
-                <div class="status-bar" style="position:relative; background:#18181b; height:18px; border-radius:10px; margin:15px 0; overflow:hidden; border:1px solid var(--border);">
+                <div id="p-rank" class="rank-display" style="margin-top: 10px; font-weight: bold; color: var(--gold);">
+                    RANK: F</div>
+
+                <div class="status-bar"
+                    style="position:relative; background:#18181b; height:18px; border-radius:10px; margin:15px 0; overflow:hidden; border:1px solid var(--border);">
                     <div id="exp-bar" class="exp-fill" style="height:100%; width:0%; transition: width 0.5s;"></div>
-                    <div id="exp-text" style="position:absolute; top:0; left:0; width:100%; height:100%; text-align:center; font-size:11px; line-height:18px; color:#fff; font-weight:bold; text-shadow:0px 1px 2px rgba(0,0,0,0.8);">0% (0/100)</div>
+                    <div id="exp-text"
+                        style="position:absolute; top:0; left:0; width:100%; height:100%; text-align:center; font-size:11px; line-height:18px; color:#fff; font-weight:bold; text-shadow:0px 1px 2px rgba(0,0,0,0.8);">
+                        0% (0/100)</div>
                 </div>
-                
+
                 <div class="stats-text">LV <span id="lv">1</span> | 골드 <span id="gold">0</span>G</div>
             </div>
 
-            <!-- 🌟 탭 이름 '주/월'로 수정 -->
             <div class="tab-menu">
                 <button type="button" class="tab-btn active" onclick="setTab('일간', event)">일간</button>
                 <button type="button" class="tab-btn" onclick="setTab('주/월', event)">주/월</button>
-                <button type="button" class="tab-btn" onclick="setTab('년간', event)">년간</button>
+                <button type="button" class="tab-btn" onclick="setTab('연간', event)">연간</button>
             </div>
 
-            <div class="input-group">
-                <input type="text" id="q-input" placeholder="새로운 할 일...">
-                <select id="q-diff" style="flex:0.2; display:none;" disabled>
-                    <option value="쉬움">쉬움</option>
-                </select>
-                <button type="button" id="q-repeat-btn" onclick="toggleRepeat()" style="flex: 0 0 65px; background:transparent; border:1px solid var(--border); color:#a1a1aa; border-radius:12px; font-size:12px; padding:0; transition:0.2s;">1회성</button>
-                <button type="button" onclick="addQuest()" class="add-btn">+</button>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; width: 100%;">
+                <div style="display: flex; gap: 8px; width: 100%;">
+                    <input type="text" id="q-input" placeholder="새로운 할 일 입력..."
+                        style="flex:1; background:transparent; border:1px solid var(--border); color:var(--text); padding:12px; border-radius:12px; font-size:14px; outline:none;">
+                    <button id="q-repeat-btn" onclick="toggleRepeat()"
+                        style="flex: 0 0 65px; background:transparent; border:1px solid var(--border); color:#a1a1aa; border-radius:12px; font-size:12px; padding:0; transition:0.2s;">1회성</button>
+                    <button onclick="addQuest()"
+                        style="flex: 0 0 50px; background:var(--accent); border:none; color:white; border-radius:12px; font-size:20px; font-weight:bold;">+</button>
+                </div>
+
+                <div id="timer-ui-container"
+                    style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                    <span style="color:#a1a1aa; font-size:12px;">⏰ 마감:</span>
+                    <select id="q-ampm" onchange="toggleTimeSelects()"
+                        style="background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
+                        <option value="">설정 안함</option>
+                        <option value="AM">오전</option>
+                        <option value="PM">오후</option>
+                    </select>
+                    <select id="q-hour"
+                        style="display:none; background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
+                        <option value="1">1시</option>
+                        <option value="2">2시</option>
+                        <option value="3">3시</option>
+                        <option value="4">4시</option>
+                        <option value="5">5시</option>
+                        <option value="6">6시</option>
+                        <option value="7">7시</option>
+                        <option value="8">8시</option>
+                        <option value="9">9시</option>
+                        <option value="10">10시</option>
+                        <option value="11">11시</option>
+                        <option value="12">12시</option>
+                    </select>
+                    <select id="q-minute"
+                        style="display:none; background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
+                        <option value="0">00분</option>
+                        <option value="10">10분</option>
+                        <option value="20">20분</option>
+                        <option value="30">30분</option>
+                        <option value="40">40분</option>
+                        <option value="50">50분</option>
+                    </select>
+                </div>
             </div>
+
             <div id="q-list" class="list-container"></div>
 
             <div class="shop-section" style="margin-top: 30px;">
@@ -98,36 +140,47 @@
             </div>
 
             <div style="margin-top: 25px; text-align: center;">
-                <button type="button" onclick="showHistory()" style="background: transparent; border: 1px dashed var(--border); color: #a1a1aa; padding: 10px 20px; border-radius: 12px; width: 100%; font-size: 13px;">
+                <button type="button" onclick="showHistory()"
+                    style="background: transparent; border: 1px dashed var(--border); color: #a1a1aa; padding: 10px 20px; border-radius: 12px; width: 100%; font-size: 13px;">
                     📜 활동 기록 열어보기
                 </button>
             </div>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #30363d;">
+            <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #30363d;">
                 <div style="display:flex; gap:10px;">
                     <a href="privacy.html" style="color:#8b949e; font-size:11px; text-decoration:underline;">개인정보 처리방침</a>
-                    <a href="account-deletion.html" style="color:#8b949e; font-size:11px; text-decoration:underline;">계정삭제 안내</a>
+                    <a href="account-deletion.html"
+                        style="color:#8b949e; font-size:11px; text-decoration:underline;">계정삭제 안내</a>
                 </div>
-                <button type="button" onclick="deleteAccount()" style="background:none; border:none; color:var(--red); font-size:11px; cursor:pointer; text-decoration:underline;">계정 삭제</button>
+                <button type="button" onclick="deleteAccount()"
+                    style="background:none; border:none; color:var(--red); font-size:11px; cursor:pointer; text-decoration:underline;">계정 삭제</button>
             </div>
         </div>
+
+        <button type="button" onclick="migrateMyData()" style="background:var(--accent); color:white; padding:10px; border-radius:8px; width:100%; margin-top:20px;">[임시] 구글 계정으로 데이터 이사하기</button>
 
         <div id="ranking-modal" class="auth-overlay" style="display:none; flex-direction:column;">
             <div class="auth-box ranking-card">
                 <h2 style="color:var(--gold); margin-bottom:15px;">명예의 전당</h2>
                 <div id="ranking-list" style="text-align:left;"></div>
-                <button type="button" onclick="closeRanking()" class="close-btn" style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
+                <button type="button" onclick="closeRanking()" class="close-btn"
+                    style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
             </div>
         </div>
 
         <div id="history-modal" class="auth-overlay" style="display:none; flex-direction:column;">
             <div class="auth-box history-card" style="max-height: 80vh; display: flex; flex-direction: column;">
                 <h2 style="color:var(--text); margin-bottom:15px; font-size:18px;">📜 나의 활동 기록</h2>
-                <div id="history-list" style="text-align:left; overflow-y:auto; flex: 1; padding-right:5px; font-size:13px; color:#a1a1aa; line-height: 1.6;"></div>
-                <button type="button" onclick="closeHistory()" style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
+                <div id="history-list"
+                    style="text-align:left; overflow-y:auto; flex: 1; padding-right:5px; font-size:13px; color:#a1a1aa; line-height: 1.6;">
+                </div>
+                <button type="button" onclick="closeHistory()"
+                    style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
             </div>
         </div>
     </div>
     <script src="script.js"></script>
 </body>
+
 </html>
