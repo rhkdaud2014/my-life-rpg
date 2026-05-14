@@ -48,82 +48,83 @@ function createDefaultState() {
     };
 }
 
-function initFirebase() {
-    if (!window.firebase) { showAuthMessage("앱 초기화 실패"); return; }
-    firebase.initializeApp(firebaseConfig);
-    auth = firebase.auth();
-    db = firebase.firestore();
-
-    db.enablePersistence().catch(err => {
-        console.warn("오프라인 모드 활성화 실패:", err.code);
-    });
-
-    handleRedirectResult();
-
-    // 🌟 수정된 핵심 로직: 로그인을 하러 나간 상태(Redirect)인지 먼저 체크합니다.
-    const isRedirecting = sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1";
-
-    // 만약 로그인을 하러 나간 게 아니라면 게스트 모드인지 확인합니다.
-    if (!isRedirecting && localStorage.getItem('lifeRpgIsGuest') === 'true') {
-        startGuestMode(); return;
+async function initFirebase() {
+    if (!window.firebase) {
+        showAuthMessage("앱 초기화 실패");
+        return;
     }
 
-    auth.onAuthStateChanged(user => {
+    firebase.initializeApp(firebaseConfig);
+
+    auth = firebase.auth();
+
+    // ✅ 로그인 유지 강제
+    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+    db = firebase.firestore();
+
+    try {
+        // ✅ redirect 결과를 먼저 기다림
+        const result = await auth.getRedirectResult();
+
+        if (result.user) {
+            console.log("리다이렉트 로그인 성공");
+            sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+        }
+    } catch (err) {
+        console.error(err);
+
+        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+
+        showAuthMessage("로그인 실패");
+    }
+
+    auth.onAuthStateChanged(async (user) => {
         currentUser = user;
-        
-        // 🌟 로그인이 확인되면 무조건 펜딩 키를 지웁니다.
+
         if (user) {
             sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
-            
-            const isGuestToReal = localStorage.getItem('lifeRpgIsGuest') === 'true';
-            const guestDataStr = localStorage.getItem('lifeRpgGuestData');
 
             isGuestMode = false;
+
             $("auth-section").style.display = "none";
             $("main-game").style.display = "block";
 
-            if (isGuestToReal && guestDataStr) {
-                if (confirm("게스트 데이터를 구글 계정에 연동할까요?")) {
-                    try {
-                        state = normalizeState(JSON.parse(guestDataStr));
-                        saveData();
-                        alert("데이터 연동 성공!");
-                    } catch (e) { console.error(e); }
-                }
-                localStorage.removeItem('lifeRpgIsGuest');
-                localStorage.removeItem('lifeRpgGuestData');
-                checkAndResetQuests(); updateUI(); return;
-            }
-            loadData();
+            await loadData();
 
-        } else if (isGuestMode) {
-            $("auth-section").style.display = "none";
-            $("main-game").style.display = "block";
-            updateUI();
         } else {
-            // 🌟 유저 정보가 없는데 리다이렉트 중이라면?
-            const isRedirecting = sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1";
-            
+
+            const isRedirecting =
+                sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1";
+
             if (isRedirecting) {
-                showAuthMessage("로그인 정보를 불러오는 중...");
-                
-                // 🔥 [핵심] 아이폰 무한 로딩 방지: 8초 뒤에도 소식이 없으면 강제로 로그인 버튼 복구
+
+                showAuthMessage("로그인 처리 중...");
+
+                // ✅ 무한로딩 방지
                 setTimeout(() => {
-                    if (!currentUser && sessionStorage.getItem(AUTH_REDIRECT_PENDING_KEY) === "1") {
-                        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
-                        showAuthMessage("로그인 시간이 초과되었습니다. 다시 시도해주세요.");
-                        $("auth-section").style.display = "flex";
-                        $("main-game").style.display = "none";
+
+                    if (!auth.currentUser) {
+
+                        sessionStorage.removeItem(
+                            AUTH_REDIRECT_PENDING_KEY
+                        );
+
+                        showAuthMessage(
+                            "로그인 세션이 만료되었습니다."
+                        );
+
                     }
-                }, 8000); 
+
+                }, 5000);
 
             } else {
-                state = createDefaultState();
+
                 $("auth-section").style.display = "flex";
                 $("main-game").style.display = "none";
+
             }
         }
-        updateGuestNotice();
     });
 }
 
