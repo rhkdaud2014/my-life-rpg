@@ -94,22 +94,23 @@ async function initFirebase() {
 
                 showAuthMessage("로그인 처리 중...");
 
-                setTimeout(() => {
-
+                setTimeout(async () => {
                     if (!auth.currentUser) {
-
+                        try {
+                            const result = await auth.getRedirectResult();
+                            console.log(result);
+                        } catch (e) {
+                            console.error("진짜 에러:", e);
+                            showAuthMessage(
+                                "에러: " + e.code
+                            );
+                        }
+                        
                         sessionStorage.removeItem(
                             AUTH_REDIRECT_PENDING_KEY
                         );
-
-                        showAuthMessage(
-                            "로그인 실패. 다시 시도해주세요."
-                        );
-
                     }
-
                 }, 5000);
-
             } else {
 
                 $("auth-section").style.display = "flex";
