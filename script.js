@@ -56,12 +56,16 @@ async function initFirebase() {
 
     firebase.initializeApp(firebaseConfig);
 
-    auth = firebase.auth();
+   auth = firebase.auth();
 
-    // ✅ 로그인 유지 강제
-    await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+try {
+    // 아이폰 Safari 대응
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+} catch (e) {
+    console.error("Persistence 설정 실패:", e);
+}
 
-    db = firebase.firestore();
+db = firebase.firestore();
 
     try {
         // ✅ redirect 결과를 먼저 기다림
