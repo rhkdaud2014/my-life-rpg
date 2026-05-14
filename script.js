@@ -56,37 +56,26 @@ async function initFirebase() {
 
     firebase.initializeApp(firebaseConfig);
 
-   auth = firebase.auth();
-
-try {
-    // 아이폰 Safari 대응
-    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
-} catch (e) {
-    console.error("Persistence 설정 실패:", e);
-}
-
-db = firebase.firestore();
+    auth = firebase.auth();
 
     try {
-        // ✅ redirect 결과를 먼저 기다림
-        const result = await auth.getRedirectResult();
-
-        if (result.user) {
-            console.log("리다이렉트 로그인 성공");
-            sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
-        }
-    } catch (err) {
-        console.error(err);
-
-        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
-
-        showAuthMessage("로그인 실패");
+        await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    } catch (e) {
+        console.error(e);
     }
+
+    db = firebase.firestore();
+
+    // 🔥 추가
+    auth.getRedirectResult().catch(err => {
+        console.error("redirect error:", err);
+    });
 
     auth.onAuthStateChanged(async (user) => {
         currentUser = user;
 
         if (user) {
+
             sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
 
             isGuestMode = false;
@@ -105,7 +94,6 @@ db = firebase.firestore();
 
                 showAuthMessage("로그인 처리 중...");
 
-                // ✅ 무한로딩 방지
                 setTimeout(() => {
 
                     if (!auth.currentUser) {
@@ -115,7 +103,7 @@ db = firebase.firestore();
                         );
 
                         showAuthMessage(
-                            "로그인 세션이 만료되었습니다."
+                            "로그인 실패. 다시 시도해주세요."
                         );
 
                     }
