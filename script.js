@@ -188,7 +188,7 @@ function loginWithGoogle() {
             if (isMobileWeb) {
                 // 아이폰은 팝업 대신 무조건 페이지 이동! (await 없이 즉시 쏴버림)
                 sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, "1");
-                firebase.auth().signInWithRedirect(provider);
+                return firebase.auth().signInWithRedirect(provider);
             } else {
                 // PC는 기존처럼 팝업
                 firebase.auth().signInWithPopup(provider).catch(err => {
