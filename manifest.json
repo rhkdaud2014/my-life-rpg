@@ -1,16 +1,19 @@
 {
-  "short_name": "인생RPG",
+  "short_name": "Life RPG",
   "name": "Life RPG: 인생 레벨업",
+  "description": "목표를 퀘스트처럼 관리하고 보상으로 꾸준히 성장하는 Life RPG 앱입니다.",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "https://cdn-icons-png.flaticon.com/512/5405/5405166.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "theme_color": "#0d1117",
-  "background_color": "#0d1117"
+  "orientation": "portrait",
+  "lang": "ko",
+  "theme_color": "#000000",
+  "background_color": "#000000"
 }
