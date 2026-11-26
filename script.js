@@ -1,11 +1,4 @@
-const firebaseConfig = {
-    apiKey: "AIzaSyCaZuvX6w6mNTllo8V9RZobN7yJkfWOvUE",
-    authDomain: "my-life-rpg-35d7a.web.app",
-    projectId: "my-life-rpg-35d7a",
-    storageBucket: "my-life-rpg-35d7a.firebasestorage.app",
-    messagingSenderId: "394166677930",
-    appId: "1:394166677930:web:6e74c380b63659e3947bd3"
-};
+
 
 const TABS = { daily: "일간", weekly: "주/월", yearly: "연간" };
 
