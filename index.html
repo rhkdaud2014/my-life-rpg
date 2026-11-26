@@ -1,184 +1,626 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0d1117">
-    <title>Life RPG v1.3</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Life RPG">
+    <meta name="format-detection" content="telephone=no">
+    <title>Life RPG</title>
     <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5405/5405166.png">
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
-
 <body>
-    <div id="container" class="game-container">
-        <div id="auth-section" class="auth-overlay">
-            <div class="auth-box">
-                <h2>✨ Life RPG</h2>
-                <p style="color:#a1a1aa; font-size:13px; margin-top:-20px; margin-bottom:25px;">나의 일상을 퀘스트로!</p>
+    <!-- iOS Activity Indicator Loading Screen -->
+    <div id="loading-screen" class="loading-overlay">
+        <div class="ios-loader-wrap">
+            <div class="ios-spinner" aria-label="로딩 중">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+            </div>
+            <p class="ios-loader-text">Life RPG</p>
+        </div>
+    </div>
 
-                <button onclick="loginWithGoogle()" class="google-btn">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="20"
-                        style="margin-right: 10px; background-color: white; border-radius: 50%;">
-                    Google 계정으로 시작하기
-                </button>
+    <!-- iOS Floating Toast (Dynamic Island Style) -->
+    <div id="ios-toast" class="ios-toast" role="status" aria-live="polite"></div>
 
-                <button onclick="startGuestModeWithWarning()" class="guest-btn"
-                    style="margin-top: 10px; background-color: transparent; border: 1px solid #30363d; color: #8b949e; width: 100%; padding: 12px; border-radius: 8px; cursor: pointer;">
-                    가입 없이 체험하기
-                </button>
+    <div id="container" class="app-shell" style="display: none;">
+        <!-- iOS Auth View -->
+        <div id="auth-section" class="auth-screen" style="display: none;">
+            <div class="auth-inner">
+                <div class="auth-hero">
+                    <div class="app-icon-badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l7.1-1.01L12 2z"/>
+                        </svg>
+                    </div>
+                    <h1 class="auth-title">Life RPG</h1>
+                    <p class="auth-subtitle">나의 일상을 퀘스트로 레벨업</p>
+                </div>
 
-                <p id="auth-msg" style="font-size:12px; color:var(--red); margin-top:15px;"></p>
+                <div class="auth-card">
+                    <button type="button" onclick="loginWithGoogle()" class="ios-btn ios-btn-white google-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" width="18" height="18" alt="Google">
+                        <span>Google로 계속하기</span>
+                    </button>
+
+                    <p id="auth-msg" class="auth-msg"></p>
+                </div>
+
+                <button type="button" onclick="startGuestModeWithWarning()" class="ios-text-btn guest-btn">가입 없이 게스트로 체험하기</button>
             </div>
         </div>
 
-        <div id="main-game" style="display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div>
-                    <button type="button" class="logout-btn" onclick="logout()">로그아웃</button>
-                    <button type="button" onclick="showRanking()" class="rank-btn">랭킹</button>
+        <!-- Main iOS App Container -->
+        <div id="main-game" class="ios-app" style="display: none;">
+            <!-- iOS Translucent Top Navigation Bar -->
+            <header class="ios-navbar">
+                <div class="ios-navbar-inner">
+                    <div class="ios-nav-left">
+                        <span id="streak-display" class="ios-pill-badge streak-pill" title="연속 접속">🔥 0일</span>
+                    </div>
+                    <h1 id="nav-title" class="ios-nav-title">퀘스트</h1>
+                    <div class="ios-nav-right">
+                        <button type="button" onclick="showRanking()" class="ios-nav-icon-btn" aria-label="명예의 전당">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                                <path d="M4 22h16"/>
+                                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <button type="button" class="reset-btn" onclick="resetGame()">초기화</button>
-            </div>
-            <p id="guest-notice"
-                style="display:none; color:#8b949e; font-size:12px; text-align:center; margin:-5px 0 15px;">게스트 모드입니다.
-                데이터가 저장되지 않습니다.</p>
+            </header>
 
-            <div class="profile-box">
-                <div id="profile-view">
-                    <h2 id="p-name">플레이어</h2>
-                    <p id="p-bio" class="bio-text">로딩 중...</p>
-                    <button type="button" onclick="toggleProfileEdit()" class="small-btn">수정</button>
-                </div>
-                <div id="profile-edit" style="display:none;">
-                    <input type="text" id="edit-name" placeholder="닉네임"><br>
-                    <input type="text" id="edit-bio" placeholder="한 줄 다짐" style="margin: 8px 0;"><br>
-                    <button type="button" onclick="saveProfile()" class="save-btn">저장</button>
-                </div>
-                <div id="p-rank" class="rank-display" style="margin-top: 10px; font-weight: bold; color: var(--gold);">
-                    RANK: F</div>
-
-                <div class="status-bar"
-                    style="position:relative; background:#18181b; height:18px; border-radius:10px; margin:15px 0; overflow:hidden; border:1px solid var(--border);">
-                    <div id="exp-bar" class="exp-fill" style="height:100%; width:0%; transition: width 0.5s;"></div>
-                    <div id="exp-text"
-                        style="position:absolute; top:0; left:0; width:100%; height:100%; text-align:center; font-size:11px; line-height:18px; color:#fff; font-weight:bold; text-shadow:0px 1px 2px rgba(0,0,0,0.8);">
-                        0% (0/100)</div>
-                </div>
-
-                <div class="stats-text">LV <span id="lv">1</span> | 골드 <span id="gold">0</span>G</div>
-            </div>
-
-            <div class="tab-menu">
-                <button type="button" class="tab-btn active" onclick="setTab('일간', event)">일간</button>
-                <button type="button" class="tab-btn" onclick="setTab('주/월', event)">주/월</button>
-                <button type="button" class="tab-btn" onclick="setTab('연간', event)">연간</button>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; width: 100%;">
-                <div style="display: flex; gap: 8px; width: 100%;">
-                    <input type="text" id="q-input" placeholder="새로운 할 일 입력..."
-                        style="flex:1; background:transparent; border:1px solid var(--border); color:var(--text); padding:12px; border-radius:12px; font-size:14px; outline:none;">
-                    <button id="q-repeat-btn" onclick="toggleRepeat()"
-                        style="flex: 0 0 65px; background:transparent; border:1px solid var(--border); color:#a1a1aa; border-radius:12px; font-size:12px; padding:0; transition:0.2s;">1회성</button>
-                    <button onclick="addQuest()"
-                        style="flex: 0 0 50px; background:var(--accent); border:none; color:white; border-radius:12px; font-size:20px; font-weight:bold;">+</button>
+            <!-- Scrollable Page Viewport -->
+            <main id="app-scroll-view" class="ios-scroll-view">
+                <div id="guest-notice" class="ios-callout" style="display: none;">
+                    <div class="ios-callout-text">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <span>게스트 모드 · 데이터 보관하려면 계정을 연동하세요</span>
+                    </div>
+                    <button type="button" onclick="convertGuestToGoogle()" class="ios-callout-btn">계정 전환</button>
                 </div>
 
-                <div id="timer-ui-container"
-                    style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
-                    <span style="color:#a1a1aa; font-size:12px;">⏰ 마감:</span>
-                    <select id="q-ampm" onchange="toggleTimeSelects()"
-                        style="background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
-                        <option value="">설정 안함</option>
-                        <option value="AM">오전</option>
-                        <option value="PM">오후</option>
-                    </select>
-                    <select id="q-hour"
-                        style="display:none; background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
-                        <option value="1">1시</option>
-                        <option value="2">2시</option>
-                        <option value="3">3시</option>
-                        <option value="4">4시</option>
-                        <option value="5">5시</option>
-                        <option value="6">6시</option>
-                        <option value="7">7시</option>
-                        <option value="8">8시</option>
-                        <option value="9">9시</option>
-                        <option value="10">10시</option>
-                        <option value="11">11시</option>
-                        <option value="12">12시</option>
-                    </select>
-                    <select id="q-minute"
-                        style="display:none; background:var(--card); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:8px; font-size:13px; outline:none; cursor:pointer;">
-                        <option value="0">00분</option>
-                        <option value="10">10분</option>
-                        <option value="20">20분</option>
-                        <option value="30">30분</option>
-                        <option value="40">40분</option>
-                        <option value="50">50분</option>
-                    </select>
-                </div>
-            </div>
+                <!-- VIEW 1: Quests (Home) -->
+                <section id="view-quests" class="app-view active">
+                    <div class="ios-large-title-row">
+                        <h2 class="ios-large-title">퀘스트</h2>
+                        <button type="button" id="p-rank" class="ios-rank-chip tier-bronze" onclick="openTierModal()">🥉 브론즈 ›</button>
+                    </div>
 
-            <div id="q-list" class="list-container"></div>
+                    <!-- Hero Status Widget Card -->
+                    <div class="ios-hero-card">
+                        <div class="hero-top">
+                            <div class="hero-avatar" id="hero-avatar">P</div>
+                            <div class="hero-meta">
+                                <div class="hero-name-row">
+                                    <h3 id="p-name">플레이어</h3>
+                                    <button type="button" onclick="openProfileTabForEdit()" class="hero-edit-btn" aria-label="프로필 수정">
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                                    </button>
+                                </div>
+                                <p id="p-bio" class="bio-text">로딩 중...</p>
+                            </div>
+                        </div>
 
-            <div class="shop-section" style="margin-top: 30px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h3 style="margin:0; color:var(--gold);">🎁 나를 위한 보상</h3>
-                    <button type="button" onclick="suggestReward()" class="suggest-btn">추천</button>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="s-input" placeholder="치킨 사먹기, 쇼핑 등">
-                    <input type="number" id="s-price" placeholder="G" style="flex:0.4;" min="1" inputmode="numeric">
-                    <button type="button" onclick="addShopItem()" class="shop-add-btn">등록</button>
-                </div>
-                <div id="s-list" class="list-container"></div>
-            </div>
+                        <div class="hero-stats-grid">
+                            <div class="hero-stat-pill">
+                                <span class="hero-stat-label">레벨</span>
+                                <span class="hero-stat-value">LV <strong id="lv">1</strong></span>
+                            </div>
+                            <div class="hero-stat-pill">
+                                <span class="hero-stat-label">보유 골드</span>
+                                <span class="hero-stat-value gold-val"><strong id="gold">0</strong>G</span>
+                            </div>
+                        </div>
 
-            <div style="margin-top: 25px; text-align: center;">
-                <button type="button" onclick="showHistory()"
-                    style="background: transparent; border: 1px dashed var(--border); color: #a1a1aa; padding: 10px 20px; border-radius: 12px; width: 100%; font-size: 13px;">
-                    📜 활동 기록 열어보기
+                        <div class="exp-block">
+                            <div class="exp-header">
+                                <span id="next-tier-hint" class="exp-label">다음 승급: 실버 (Lv.10)</span>
+                                <span id="exp-text" class="exp-value">0% (0/100)</span>
+                            </div>
+                            <div class="status-bar">
+                                <div id="exp-bar" class="exp-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- iOS Segmented Control -->
+                    <div class="tab-menu ios-segmented" role="tablist">
+                        <button type="button" class="tab-btn active" onclick="setTab('일간', event)">일간</button>
+                        <button type="button" class="tab-btn" onclick="setTab('주/월', event)">주/월</button>
+                        <button type="button" class="tab-btn" onclick="setTab('연간', event)">연간</button>
+                    </div>
+
+                    <!-- Quest Composer -->
+                    <div class="ios-card composer-card">
+                        <div class="composer-input-row">
+                            <input type="text" id="q-input" class="ios-inline-input" placeholder="새로운 퀘스트를 입력하세요">
+                            <button type="button" class="ios-circle-add-btn" onclick="addQuest()" aria-label="퀘스트 추가">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                        </div>
+                        <div class="composer-options">
+                            <button type="button" id="q-repeat-btn" class="ios-chip-toggle" onclick="toggleRepeat()">
+                                <span>1회성</span>
+                            </button>
+                            <div id="timer-ui-container" class="timer-chip-wrap">
+                                <input type="hidden" id="q-time" value="">
+                                <button type="button" id="deadline-trigger-btn" class="ios-chip-toggle deadline-pill" onclick="openDeadlineModal()">
+                                    <span>⏰ 마감 설정</span>
+                                </button>
+                                <button type="button" id="deadline-clear-btn" class="deadline-clear-btn" onclick="clearDeadlineTime()" style="display: none;" aria-label="마감 시간 지우기">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quest List -->
+                    <div class="ios-section-header">
+                        <span>진행 중인 퀘스트</span>
+                        <span id="quest-count-badge" class="ios-section-meta">0개</span>
+                    </div>
+                    <div id="q-list" class="ios-list-group"></div>
+                </section>
+
+                <!-- VIEW 2: Expenses (Things to Buy & Fixed Expenses) -->
+                <section id="view-expenses" class="app-view">
+                    <div class="ios-large-title-row">
+                        <h2 class="ios-large-title">지출</h2>
+                    </div>
+
+                    <div class="ios-segmented" role="tablist">
+                        <button type="button" class="exp-tab-btn active" id="btn-exp-buy" onclick="switchExpenseTab('buy')">사야 할 것</button>
+                        <button type="button" class="exp-tab-btn" id="btn-exp-fixed" onclick="switchExpenseTab('fixed')">고정지출</button>
+                    </div>
+
+                    <!-- Sub-view A: Things to Buy -->
+                    <div id="expense-panel-buy">
+                        <div class="ios-summary-card buy-summary">
+                            <div class="summary-col">
+                                <span class="summary-label">남은 구매 항목</span>
+                                <span class="summary-value"><strong id="buy-remaining-count">0</strong>개</span>
+                            </div>
+                            <div class="summary-divider"></div>
+                            <div class="summary-col align-right">
+                                <span class="summary-label">예상 금액 합계</span>
+                                <span class="summary-value accent-blue"><strong id="buy-total-amount">0</strong>원</span>
+                            </div>
+                        </div>
+
+                        <div class="ios-card shop-composer-card">
+                            <div class="ios-grouped-inputs compact">
+                                <input type="text" id="buy-name-input" placeholder="사야 할 물건 (예: 생수, 치약, 충전기)">
+                                <div class="ios-input-sep"></div>
+                                <div class="shop-price-row">
+                                    <input type="number" id="buy-price-input" placeholder="예상 금액 원 (선택)" min="0" inputmode="numeric">
+                                    <button type="button" onclick="addBuyItem()" class="ios-btn ios-btn-primary shop-add-btn">추가</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ios-section-header">
+                            <span>구매 예정 목록</span>
+                            <div class="ios-section-actions">
+                                <span id="buy-count-badge" class="ios-section-meta">0개</span>
+                                <button type="button" id="buy-clear-done-btn" class="ios-section-link" onclick="clearCompletedBuyItems()" style="display: none;">완료 정리</button>
+                            </div>
+                        </div>
+                        <div id="buy-list" class="ios-list-group"></div>
+                    </div>
+
+                    <!-- Sub-view B: Fixed Expenses -->
+                    <div id="expense-panel-fixed" style="display: none;">
+                        <div class="ios-summary-card fixed-summary">
+                            <div class="fixed-summary-top">
+                                <span class="summary-label">매월 총 고정지출</span>
+                                <span id="fixed-month-badge" class="fixed-month-pill">이번 달</span>
+                            </div>
+                            <div class="fixed-total-figure"><span id="fixed-total-amount">0</span><small>원</small></div>
+                            <div class="fixed-summary-sub">
+                                <span>납부 완료 <strong id="fixed-paid-amount">0원</strong></span>
+                                <span>남은 지출 <strong id="fixed-unpaid-amount">0원</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="ios-card shop-composer-card">
+                            <div class="ios-grouped-inputs compact">
+                                <input type="text" id="fixed-name-input" placeholder="고정지출 항목 (예: 월세, 통신비, 넷플릭스)">
+                                <div class="ios-input-sep"></div>
+                                <div class="fixed-meta-row">
+                                    <input type="number" id="fixed-amount-input" placeholder="월 금액 (원)" min="1" inputmode="numeric" style="flex: 1.4;">
+                                    <div class="ios-v-sep"></div>
+                                    <input type="number" id="fixed-day-input" placeholder="결제일 (1~31)" min="1" max="31" inputmode="numeric" style="flex: 0.9;">
+                                    <button type="button" onclick="addFixedExpense()" class="ios-btn ios-btn-primary shop-add-btn">등록</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ios-section-header">
+                            <span>매월 고정지출 목록</span>
+                            <span id="fixed-count-badge" class="ios-section-meta">0건</span>
+                        </div>
+                        <div id="fixed-list" class="ios-list-group"></div>
+                    </div>
+                </section>
+
+                <!-- VIEW 3: Reward Shop -->
+                <section id="view-shop" class="app-view">
+                    <div class="ios-large-title-row">
+                        <h2 class="ios-large-title">보상 상점</h2>
+                        <button type="button" onclick="suggestReward()" class="ios-tinted-pill-btn">✨ 랜덤 추천</button>
+                    </div>
+
+                    <div class="ios-wallet-card">
+                        <div class="wallet-label">사용 가능한 골드</div>
+                        <div class="wallet-balance"><span id="shop-gold">0</span><small>G</small></div>
+                    </div>
+
+                    <div class="ios-section-header">
+                        <span>새 보상 등록</span>
+                    </div>
+                    <div class="ios-card shop-composer-card">
+                        <div class="ios-grouped-inputs compact">
+                            <input type="text" id="s-input" placeholder="보상 이름 (예: 치킨 사먹기, 쇼핑)">
+                            <div class="ios-input-sep"></div>
+                            <div class="shop-price-row">
+                                <input type="number" id="s-price" placeholder="필요 골드 (G)" min="1" inputmode="numeric">
+                                <button type="button" onclick="addShopItem()" class="ios-btn ios-btn-primary shop-add-btn">등록</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ios-section-header">
+                        <span>나를 위한 보상 목록</span>
+                        <span id="shop-count-badge" class="ios-section-meta">0개</span>
+                    </div>
+                    <div id="s-list" class="ios-list-group"></div>
+                </section>
+
+                <!-- VIEW 3: History & Stats -->
+                <section id="view-history" class="app-view">
+                    <div class="ios-large-title-row">
+                        <h2 class="ios-large-title">내역</h2>
+                    </div>
+
+                    <div class="modal-tabs ios-segmented">
+                        <button type="button" class="m-tab-btn active" id="btn-hist-act" onclick="switchHistoryTab('activity')">활동 내역</button>
+                        <button type="button" class="m-tab-btn" id="btn-hist-gold" onclick="switchHistoryTab('gold')">골드 내역</button>
+                        <button type="button" class="m-tab-btn" id="btn-hist-stats" onclick="switchHistoryTab('stats')">골드 통계</button>
+                    </div>
+
+                    <div id="history-list" class="history-page-list"></div>
+                </section>
+
+                <!-- VIEW 4: Profile & Settings -->
+                <section id="view-profile" class="app-view">
+                    <div class="ios-large-title-row">
+                        <h2 class="ios-large-title">설정</h2>
+                    </div>
+
+                    <!-- Profile Summary & Editor Card -->
+                    <div class="ios-card profile-settings-card">
+                        <div id="profile-view" class="profile-settings-row">
+                            <div class="hero-avatar large" id="settings-avatar">P</div>
+                            <div class="profile-settings-info">
+                                <h3 id="settings-name">플레이어</h3>
+                                <p id="settings-bio" class="bio-text">나의 일상을 퀘스트로!</p>
+                                <span id="settings-meta" class="settings-sub-meta">LV 1 · 🥉 브론즈 · 🔥 0일</span>
+                            </div>
+                            <button type="button" onclick="toggleProfileEdit()" class="ios-tinted-pill-btn small">편집</button>
+                        </div>
+
+                        <div id="profile-edit" class="profile-edit-form" style="display: none;">
+                            <div class="ios-grouped-inputs compact">
+                                <input type="text" id="edit-name" placeholder="닉네임" maxlength="20">
+                                <div class="ios-input-sep"></div>
+                                <input type="text" id="edit-bio" placeholder="한 줄 다짐" maxlength="60">
+                            </div>
+                            <div class="auth-btn-row" style="margin-top: 12px;">
+                                <button type="button" onclick="toggleProfileEdit()" class="ios-btn ios-btn-secondary">취소</button>
+                                <button type="button" onclick="saveProfile()" class="ios-btn ios-btn-primary">저장</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grouped Settings: Community & Info -->
+                    <div class="ios-section-header"><span>콘텐츠</span></div>
+                    <div class="ios-inset-group">
+                        <button type="button" class="ios-settings-row" onclick="showRanking()">
+                            <span class="settings-icon bg-gold">🏆</span>
+                            <span class="settings-row-label">명예의 전당 (랭킹)</span>
+                            <span class="ios-chevron">›</span>
+                        </button>
+                        <div class="ios-row-sep"></div>
+                        <button type="button" class="ios-settings-row" onclick="openNoticeModal()">
+                            <span class="settings-icon bg-blue">✨</span>
+                            <span class="settings-row-label">업데이트 안내</span>
+                            <span class="ios-chevron">›</span>
+                        </button>
+                    </div>
+
+                    <!-- Grouped Settings: Account -->
+                    <div class="ios-section-header"><span>데이터 및 계정</span></div>
+                    <div class="ios-inset-group">
+                        <button type="button" id="settings-convert-guest-row" class="ios-settings-row" onclick="convertGuestToGoogle()" style="display: none;">
+                            <span class="settings-icon bg-blue">G</span>
+                            <span class="settings-row-label" style="color: var(--ios-blue); font-weight: 600;">Google 계정 전환 로그인</span>
+                            <span class="ios-chevron">›</span>
+                        </button>
+                        <div id="settings-convert-sep" class="ios-row-sep" style="display: none;"></div>
+                        <button type="button" class="ios-settings-row" onclick="resetGame()">
+                            <span class="settings-icon bg-orange">↺</span>
+                            <span class="settings-row-label">진행 데이터 초기화</span>
+                            <span class="ios-chevron">›</span>
+                        </button>
+                        <div class="ios-row-sep"></div>
+                        <button type="button" class="ios-settings-row" onclick="logout()">
+                            <span class="settings-icon bg-gray">↪</span>
+                            <span class="settings-row-label">로그아웃</span>
+                            <span class="ios-chevron">›</span>
+                        </button>
+                    </div>
+
+                    <!-- Grouped Settings: Legal & Danger -->
+                    <div class="ios-section-header"><span>법적 고지</span></div>
+                    <div class="ios-inset-group">
+                        <a href="privacy.html" class="ios-settings-row">
+                            <span class="settings-icon bg-green">🔒</span>
+                            <span class="settings-row-label">개인정보 처리방침</span>
+                            <span class="ios-chevron">›</span>
+                        </a>
+                        <div class="ios-row-sep"></div>
+                        <a href="account-deletion.html" class="ios-settings-row">
+                            <span class="settings-icon bg-indigo">📄</span>
+                            <span class="settings-row-label">계정삭제 안내</span>
+                            <span class="ios-chevron">›</span>
+                        </a>
+                    </div>
+
+                    <div class="ios-inset-group" style="margin-top: 16px;">
+                        <button type="button" class="ios-settings-row destructive-center" onclick="deleteAccount()">
+                            계정 영구 삭제
+                        </button>
+                    </div>
+
+                    <p class="app-version-footer">Life RPG v1.5 · iOS Edition</p>
+                </section>
+            </main>
+
+            <!-- iOS Translucent Bottom Tab Bar -->
+            <nav class="ios-tabbar" aria-label="메인 탭">
+                <button type="button" class="ios-tab-item active" data-app-tab="quests" onclick="switchAppTab('quests')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                    <span>퀘스트</span>
                 </button>
-            </div>
+                <button type="button" class="ios-tab-item" data-app-tab="expenses" onclick="switchAppTab('expenses')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="5" width="20" height="14" rx="3"/>
+                        <line x1="2" y1="10" x2="22" y2="10"/>
+                    </svg>
+                    <span>지출</span>
+                </button>
+                <button type="button" class="ios-tab-item" data-app-tab="shop" onclick="switchAppTab('shop')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 12v10H4V12"/>
+                        <path d="M2 7h20v5H2z"/>
+                        <path d="M12 22V7"/>
+                        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                    </svg>
+                    <span>상점</span>
+                </button>
+                <button type="button" class="ios-tab-item" data-app-tab="history" onclick="switchAppTab('history')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <span>내역</span>
+                </button>
+                <button type="button" class="ios-tab-item" data-app-tab="profile" onclick="switchAppTab('profile')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>설정</span>
+                </button>
+            </nav>
+        </div>
 
-            <div
-                style="display:flex; justify-content:space-between; align-items:center; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #30363d;">
-                <div style="display:flex; gap:10px;">
-                    <a href="privacy.html" style="color:#8b949e; font-size:11px; text-decoration:underline;">개인정보 처리방침</a>
-                    <a href="account-deletion.html"
-                        style="color:#8b949e; font-size:11px; text-decoration:underline;">계정삭제 안내</a>
+        <!-- iOS Bottom Sheet: Ranking -->
+        <div id="ranking-modal" class="ios-sheet-backdrop" style="display: none;" onclick="if(event.target===this) closeRanking()">
+            <div class="ios-sheet">
+                <div class="ios-sheet-grabber"></div>
+                <div class="ios-sheet-header">
+                    <h2>🏆 명예의 전당</h2>
+                    <button type="button" class="ios-sheet-close" onclick="closeRanking()">완료</button>
                 </div>
-                <button type="button" onclick="deleteAccount()"
-                    style="background:none; border:none; color:var(--red); font-size:11px; cursor:pointer; text-decoration:underline;">계정 삭제</button>
+                <div id="ranking-list" class="ios-sheet-body"></div>
             </div>
         </div>
 
-        <div id="ranking-modal" class="auth-overlay" style="display:none; flex-direction:column;">
-            <div class="auth-box ranking-card">
-                <h2 style="color:var(--gold); margin-bottom:15px;">명예의 전당</h2>
-                <div id="ranking-list" style="text-align:left;"></div>
-                <button type="button" onclick="closeRanking()" class="close-btn"
-                    style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
+        <!-- iOS Bottom Sheet: Update Notice -->
+        <div id="notice-modal" class="ios-sheet-backdrop" style="display: none; z-index: 1000;" onclick="if(event.target===this) closeNotice()">
+            <div class="ios-sheet">
+                <div class="ios-sheet-grabber"></div>
+                <div class="ios-sheet-header">
+                    <h2>🎉 업데이트 안내</h2>
+                    <button type="button" class="ios-sheet-close" onclick="closeNotice()">닫기</button>
+                </div>
+                <div class="ios-sheet-body notice-body">
+                    <div class="notice-item">
+                        <span class="notice-badge">1</span>
+                        <div>
+                            <strong>일간 퀘스트 마감 보상 2배</strong>
+                            <p>일간 퀘스트에 마감 시간을 설정하고 시간 내에 완료하면 골드와 경험치를 2배로 드립니다.</p>
+                        </div>
+                    </div>
+                    <div class="notice-item">
+                        <span class="notice-badge">2</span>
+                        <div>
+                            <strong>활동 분리 및 골드 누적 통계</strong>
+                            <p>내역 탭에서 활동 내역, 골드 내역, 그리고 골드를 가장 많이 번 퀘스트 순위를 한눈에 확인하세요.</p>
+                        </div>
+                    </div>
+                    <div class="notice-item">
+                        <span class="notice-badge">3</span>
+                        <div>
+                            <strong>iOS 네이티브 스타일 UI</strong>
+                            <p>아이폰 앱에 최적화된 하단 탭 바, 바텀 시트, 네이티브 알림창과 부드러운 인터랙션으로 전면 개편되었습니다.</p>
+                        </div>
+                    </div>
+                    <div class="notice-item">
+                        <span class="notice-badge">4</span>
+                        <div>
+                            <strong>연속 접속(스트릭) 마크</strong>
+                            <p>매일 앱에 접속할 때마다 상단 불꽃 마크가 쌓입니다!</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="ios-sheet-footer">
+                    <button type="button" onclick="closeNotice()" class="ios-btn ios-btn-primary">확인했습니다</button>
+                </div>
             </div>
         </div>
 
-        <div id="history-modal" class="auth-overlay" style="display:none; flex-direction:column;">
-            <div class="auth-box history-card" style="max-height: 80vh; display: flex; flex-direction: column;">
-                <h2 style="color:var(--text); margin-bottom:15px; font-size:18px;">📜 나의 활동 기록</h2>
-                <div id="history-list"
-                    style="text-align:left; overflow-y:auto; flex: 1; padding-right:5px; font-size:13px; color:#a1a1aa; line-height: 1.6;">
+        <!-- iOS Native Alert / Confirm / Prompt Dialog -->
+        <div id="ios-dialog-backdrop" class="ios-dialog-backdrop" style="display: none;">
+            <div class="ios-dialog" role="alertdialog" aria-modal="true">
+                <div class="ios-dialog-content">
+                    <h3 id="ios-dialog-title" class="ios-dialog-title"></h3>
+                    <p id="ios-dialog-message" class="ios-dialog-message"></p>
+                    <input type="text" id="ios-dialog-input" class="ios-dialog-input" style="display: none;">
                 </div>
-                <button type="button" onclick="closeHistory()"
-                    style="margin-top: 15px; background: var(--border); border: none; color: white; padding: 10px 20px; border-radius: 8px;">닫기</button>
+                <div id="ios-dialog-actions" class="ios-dialog-actions"></div>
+            </div>
+        </div>
+
+        <!-- iOS Bottom Sheet: Tier Ladder -->
+        <div id="tier-modal" class="ios-sheet-backdrop" style="display: none;" onclick="if(event.target===this) closeTierModal()">
+            <div class="ios-sheet">
+                <div class="ios-sheet-grabber"></div>
+                <div class="ios-sheet-header">
+                    <h2>등급표 안내</h2>
+                    <button type="button" class="ios-sheet-close" onclick="closeTierModal()">완료</button>
+                </div>
+                <div id="tier-list" class="ios-sheet-body"></div>
+            </div>
+        </div>
+
+        <!-- iOS Bottom Sheet: Deadline Time Picker -->
+        <div id="deadline-modal" class="ios-sheet-backdrop" style="display: none;" onclick="if(event.target===this) closeDeadlineModal()">
+            <div class="ios-sheet">
+                <div class="ios-sheet-grabber"></div>
+                <div class="ios-sheet-header">
+                    <h2>⏰ 마감 시간 설정</h2>
+                    <button type="button" class="ios-sheet-close" onclick="closeDeadlineModal()">취소</button>
+                </div>
+                <div class="ios-sheet-body deadline-sheet-body">
+                    <div class="deadline-preview-box">
+                        <span class="deadline-preview-label">마감 내 완료 시 골드 · 경험치 2배</span>
+                        <div id="deadline-preview-text" class="deadline-preview-time">오후 6:00</div>
+                    </div>
+
+                    <div class="deadline-section-label">빠른 설정</div>
+                    <div class="deadline-presets">
+                        <button type="button" class="deadline-preset-chip" onclick="applyQuickDeadlineMinutes(30)">+30분</button>
+                        <button type="button" class="deadline-preset-chip" onclick="applyQuickDeadlineMinutes(60)">+1시간</button>
+                        <button type="button" class="deadline-preset-chip" onclick="applyQuickDeadlineMinutes(120)">+2시간</button>
+                        <button type="button" class="deadline-preset-chip" onclick="applyFixedClockDeadline(18, 0)">오늘 18:00</button>
+                        <button type="button" class="deadline-preset-chip" onclick="applyFixedClockDeadline(21, 0)">오늘 21:00</button>
+                        <button type="button" class="deadline-preset-chip" onclick="applyFixedClockDeadline(23, 59)">오늘 23:59</button>
+                    </div>
+
+                    <div class="deadline-section-label">직접 선택</div>
+                    <div class="deadline-custom-picker">
+                        <div class="ios-segmented deadline-ampm-seg">
+                            <button type="button" id="dp-am" class="dp-ampm-btn" onclick="setPickerAmPm('AM')">오전</button>
+                            <button type="button" id="dp-pm" class="dp-ampm-btn active" onclick="setPickerAmPm('PM')">오후</button>
+                        </div>
+
+                        <div class="deadline-wheel-row">
+                            <div class="deadline-stepper-col">
+                                <span class="stepper-caption">시</span>
+                                <div class="stepper-control">
+                                    <button type="button" class="stepper-btn" onclick="stepPickerHour(-1)" aria-label="시간 감소">−</button>
+                                    <select id="dp-hour" class="dp-select" onchange="onPickerSelectChange()" aria-label="시 선택"></select>
+                                    <button type="button" class="stepper-btn" onclick="stepPickerHour(1)" aria-label="시간 증가">+</button>
+                                </div>
+                            </div>
+                            <span class="deadline-colon">:</span>
+                            <div class="deadline-stepper-col">
+                                <span class="stepper-caption">분</span>
+                                <div class="stepper-control">
+                                    <button type="button" class="stepper-btn" onclick="stepPickerMinute(-5)" aria-label="분 감소">−</button>
+                                    <select id="dp-minute" class="dp-select" onchange="onPickerSelectChange()" aria-label="분 선택"></select>
+                                    <button type="button" class="stepper-btn" onclick="stepPickerMinute(5)" aria-label="분 증가">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="ios-sheet-footer deadline-footer-row">
+                    <button type="button" onclick="clearDeadlineFromModal()" class="ios-btn ios-btn-secondary">마감 해제</button>
+                    <button type="button" onclick="confirmDeadlineTime()" class="ios-btn ios-btn-primary">적용하기</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- iOS Level Up Celebration Modal -->
+        <div id="levelup-overlay" class="levelup-bg" style="display: none;" onclick="if(event.target===this) closeLevelUpUI()">
+            <div id="levelup-particles" class="levelup-particles" aria-hidden="true"></div>
+            <div class="levelup-card">
+                <div class="levelup-aura" aria-hidden="true"></div>
+                <div class="levelup-emblem">
+                    <div class="levelup-ring"></div>
+                    <div class="levelup-icon">
+                        <svg class="levelup-arrows-svg" viewBox="0 0 48 48" width="42" height="42" fill="none" aria-hidden="true">
+                            <path class="lu-chev lu-chev-1" d="M13 33L24 22L35 33" stroke="url(#luGrad)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="lu-chev lu-chev-2" d="M13 23L24 12L35 23" stroke="url(#luGrad)" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <defs>
+                                <linearGradient id="luGrad" x1="24" y1="10" x2="24" y2="36" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#FFF4B8"/>
+                                    <stop offset="55%" stop-color="#FFD60A"/>
+                                    <stop offset="100%" stop-color="#FF9F0A"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+                <span class="levelup-kicker">LEVEL UP</span>
+                <h2 id="levelup-lv" class="levelup-big-lv">Lv. 2</h2>
+                <div id="levelup-transition" class="levelup-transition">Lv. 1 → Lv. 2</div>
+                <div id="levelup-rankup" class="levelup-rankup" style="display: none;">✨ 승급 달성!</div>
+                <p class="levelup-subtitle">꾸준한 실천으로 한 단계 더 성장했어요!</p>
+                <div class="levelup-stat-row">
+                    <div class="levelup-stat-chip">
+                        <span>현재 등급</span>
+                        <strong id="levelup-rank">🥉 브론즈</strong>
+                    </div>
+                    <div class="levelup-stat-chip">
+                        <span>보유 골드</span>
+                        <strong id="levelup-gold" class="gold-val">0G</strong>
+                    </div>
+                </div>
+                <button type="button" class="ios-btn ios-btn-primary levelup-confirm-btn" onclick="closeLevelUpUI()">계속하기</button>
             </div>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
-
 </html>
